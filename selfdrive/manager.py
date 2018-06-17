@@ -451,7 +451,13 @@ def manager_thread():
     # thermal message now also includes free space
     msg.thermal.freeSpace = avail
     with open("/sys/class/power_supply/battery/capacity") as f:
-      msg.thermal.batteryPercent = int(f.read())
+       msg.thermal.batteryPercent = int(f.read())
+        #limit charging
+      if msg.thermal.batteryPercent > 70:
+          os.system("echo 0 > /sys/class/power_supply/battery/charging_enabled")
+
+      elif msg.thermal.batteryPercent < 67:
+          os.system("echo 1 > /sys/class/power_supply/battery/charging_enabled")
     with open("/sys/class/power_supply/battery/status") as f:
       msg.thermal.batteryStatus = f.read().strip()
     with open("/sys/class/power_supply/usb/online") as f:
@@ -506,7 +512,7 @@ def manager_thread():
     should_start = should_start and avail > 0.02
 
     # require usb power
-    should_start = should_start and msg.thermal.usbOnline
+    #should_start = should_start and msg.thermal.usbOnline
 
     should_start = should_start and accepted_terms and completed_training and (not do_uninstall)
 
