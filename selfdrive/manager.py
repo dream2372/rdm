@@ -451,7 +451,7 @@ def manager_thread():
     # thermal message now also includes free space
     msg.thermal.freeSpace = avail
     with open("/sys/class/power_supply/battery/capacity") as f:
-       msg.thermal.batteryPercent = int(f.read())
+      msg.thermal.batteryPercent = int(f.read())
         #limit charging
       if msg.thermal.batteryPercent > 70:
           os.system("echo 0 > /sys/class/power_supply/battery/charging_enabled")
