@@ -22,11 +22,11 @@ def main(gctx=None):
   speed = -1
 
   #the password to get into your homeassistant UI
-  API_PASSWORD = '?????????'
+  API_PASSWORD = 'REMOVED'
   #the url and what you want to call your EON entity. ie, 'https://myhomeassistanturl.com/api/states/eon.chris'
-  API_URL = '???????????'
+  API_URL = 'https://REMOVED/api/states/eon.chris'
   #where you want to ping. probably 'https://myhomeassistanturl.com'
-  PING_URL = '?????????'
+  PING_URL = 'REMOVED'
 
   while 1:
     ready = False
@@ -67,7 +67,7 @@ def main(gctx=None):
           print "Received by Home Assistant"
         else:
           print "Problem sending. Retry"
-      sleep(5)
+      sleep(60)
       ready = False
 
 if __name__ == '__main__':
