@@ -26,38 +26,46 @@ def main(gctx=None):
   #the url and what you want to call your EON entity. ie, 'https://myhomeassistanturl.com/api/states/eon.chris'
   API_URL = 'https://csouershome.duckdns.org/api/states/eon_chris'
 
-
   while 1:
-    ping = subprocess.call(["ping", "-W", "4", "-c", "1", "csouershome.duckdns.org"])
-    if ping:
-      sleep(15)
-      continue
-    print "Transmitting to Home Assistant..."
-    for sock, event in poller.poll(500):
-      msg = sock.recv()
-      evt = log.Event.from_bytes(msg)
+    ready = False
 
-      latitude = evt.liveLocation.lat
-      longitude = evt.liveLocation.lon
-      altitude = evt.liveLocation.alt
-      speed = evt.liveLocation.speed
+    while not ready:
+      ping = subprocess.call(["ping", "-W", "4", "-c", "1", "csouershome.duckdns.org"])
+      if ping:
+        #didn't get a good ping. sleep and try again
+        sleep(15)
+      else:
+        ready = True
 
-      headers = {
-      'x-ha-access': API_PASSWORD
-      }
+    while ready:
+      print "Transmitting to Home Assistant..."
+      for sock, event in poller.poll(500):
+        msg = sock.recv()
+        evt = log.Event.from_bytes(msg)
 
-      stats = {'latitude': latitude,
-      'longitude': longitude,
-      'altitude': altitude,
-      'speed': speed,
-      }
-      data = {'state': 'connected',
-      'attributes': stats,
-      }
-      r = requests.post(API_URL, headers=headers, json=data)
-      if r.status_code == requests.codes.ok:
-        print "Received by Home Assistant"
-      sleep(3) #sleep until next time to send
+        latitude = evt.liveLocation.lat
+        longitude = evt.liveLocation.lon
+        altitude = evt.liveLocation.alt
+        speed = evt.liveLocation.speed
+
+        headers = {
+        'x-ha-access': API_PASSWORD
+        }
+
+        stats = {'latitude': latitude,
+        'longitude': longitude,
+        'altitude': altitude,
+        'speed': speed,
+        }
+        data = {'state': 'connected',
+        'attributes': stats,
+        }
+        r = requests.post(API_URL, headers=headers, json=data)
+        if r.status_code == requests.codes.ok:
+          print "Received by Home Assistant"
+        else:
+          print "Problem sending. Retry"
+      ready = False
 
 if __name__ == '__main__':
   main()
