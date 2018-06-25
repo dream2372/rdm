@@ -28,12 +28,14 @@ def main(gctx=None):
 
 
   while 1:
-    ping = subprocess.call(["ping", "-W", "4", "-c", "1", "***REMOVED***"])
-    if ping:
-      sleep(15)
-      continue
-    print "Transmitting to Home Assistant..."
+    #only send when an event occurs
     for sock, event in poller.poll(500):
+      ping = subprocess.call(["ping", "-W", "4", "-c", "1", "***REMOVED***"])
+      if ping:
+        #sleep in hopes of having a successful connection next time
+        sleep(15)
+        continue
+      print "Transmitting to Home Assistant..."
       msg = sock.recv()
       evt = log.Event.from_bytes(msg)
 
@@ -45,7 +47,6 @@ def main(gctx=None):
       headers = {
       'x-ha-access': API_PASSWORD
       }
-
       stats = {'latitude': latitude,
       'longitude': longitude,
       'altitude': altitude,
@@ -54,12 +55,11 @@ def main(gctx=None):
       data = {'state': 'connected',
       'attributes': stats,
       }
+
       r = requests.post(API_URL, headers=headers, json=data)
       if r.status_code == requests.codes.ok:
         print "Received by Home Assistant"
       sleep(3) #sleep until next time to send
-    else:
-      continue
 
 if __name__ == '__main__':
   main()
