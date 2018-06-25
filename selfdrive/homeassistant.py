@@ -57,13 +57,7 @@ def main(gctx=None):
       r = requests.post(API_URL, headers=headers, json=data)
       if r.status_code == requests.codes.ok:
         print "Received by Home Assistant"
-<<<<<<< HEAD
-      sleep(60) #sleep until next time to send
-=======
       sleep(3) #sleep until next time to send
-    else:
-      continue
->>>>>>> parent of b4f6cda... move things around
 
 if __name__ == '__main__':
   main()
