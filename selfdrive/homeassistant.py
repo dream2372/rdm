@@ -59,7 +59,7 @@ def main(gctx=None):
       r = requests.post(API_URL, headers=headers, json=data)
       if r.status_code == requests.codes.ok:
         print "Received by Home Assistant"
-      sleep(3) #sleep until next time to send
+      sleep(60) #sleep until next time to send
 
 if __name__ == '__main__':
   main()
