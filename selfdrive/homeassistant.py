@@ -65,6 +65,7 @@ def main(gctx=None):
           print "Received by Home Assistant"
         else:
           print "Problem sending. Retry"
+      sleep(5)
       ready = False
 
 if __name__ == '__main__':
