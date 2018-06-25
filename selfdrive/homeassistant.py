@@ -22,15 +22,17 @@ def main(gctx=None):
   speed = -1
 
   #the password to get into your homeassistant UI
-  API_PASSWORD = '894315'
+  API_PASSWORD = '?????????'
   #the url and what you want to call your EON entity. ie, 'https://myhomeassistanturl.com/api/states/eon.chris'
-  API_URL = 'https://csouershome.duckdns.org/api/states/eon_chris'
+  API_URL = '???????????'
+  #where you want to ping. probably 'https://myhomeassistanturl.com'
+  PING_URL = '?????????'
 
   while 1:
     ready = False
 
     while not ready:
-      ping = subprocess.call(["ping", "-W", "4", "-c", "1", "csouershome.duckdns.org"])
+      ping = subprocess.call(["ping", "-W", "4", "-c", "1", PING_URL])
       if ping:
         #didn't get a good ping. sleep and try again
         sleep(15)
