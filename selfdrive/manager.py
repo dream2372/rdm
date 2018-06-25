@@ -105,7 +105,7 @@ managed_processes = {
   "orbd": ("selfdrive/orbd", ["./orbd_wrapper.sh"]),
   "updated": "selfdrive.updated",
   #"gpsplanner": "selfdrive.controls.gps_plannerd",
-  "homeassistant": "selfdrive.homeassistant",
+  "homeassistant": ("selfdrive", ["./homeassistant.py"]),
 }
 
 running = {}
