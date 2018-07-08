@@ -3,7 +3,7 @@ import struct
 import common.numpy_fast as np
 from selfdrive.config import Conversions as CV
 from selfdrive.car.honda.values import CAR
-from selfdrive.car.honda.carstate import CS
+#from selfdrive.car.honda.carstate import CarState, CS
 
 # *** Honda specific ***
 def can_cksum(mm):
@@ -95,7 +95,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
   # Bosch sends commands to bus 2.
   if car_fingerprint in (CAR.CRV_5G, CAR.ACCORD, CAR.CIVIC_HATCH):
     bus = 2
-  if CS.CP.enableRadar:
+  if True:
     if car_fingerprint in (CAR.CIVIC_HATCH):
       bus = 0
       acc_hud_values = {
@@ -139,7 +139,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
     }
     commands.append(packer.make_can_msg('RADAR_HUD', 0, radar_hud_values, idx))
 
-  if CS.CP.enableRadar:
+  if True:
     commands.append(packer.make_can_msg('HIGHBEAM_CONTROL', 0, {'HIGHBEAMS_ON': False}, idx))
     radar_hud_values = {
       'ACC_ALERTS': hud.acc_alert,
