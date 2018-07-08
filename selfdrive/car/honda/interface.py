@@ -156,6 +156,7 @@ class CarInterface(object):
     if ret.enableRadar:
       ret.safetyModel = car.CarParams.SafetyModels.honda
       ret.radarOffCan = False
+      ret.enableCamera = True
 
     print "ECU Camera Simulated: ", ret.enableCamera
     print "ECU Radar Simulated: ", ret.enableRadar
