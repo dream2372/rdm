@@ -30,8 +30,8 @@ def make_can_msg(addr, dat, idx, alt):
 def create_long_command(packer, gas_amount, apply_brake, idx):
 
   values = {
-    #"GAS_COMMAND": gasbrake2,
-    #"RELATED_TO_GAS": related_to_gas,
+    "GAS_COMMAND": 0xd0,
+    "RELATED_TO_GAS": 0x45,
     "CONTROL_ON": 0x05,
     #"GAS_BRAKE": gasbrake,
   }
