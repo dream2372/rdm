@@ -94,18 +94,12 @@ class CarInterface(object):
     self.CS = CarState(CP)
     self.VM = VehicleModel(CP)
 
-    print "DBC is",
-    print self.cp.dbc_name
-
-    print "enableCamera is",
-    print CP.enableCamera
-
     # sending if read only is False
     if sendcan is not None:
       self.sendcan = sendcan
-      print "sendcan is",
-      print self.sendcan
+      print "self.cp is",
       print self.cp
+      print "CP is",
       print CP
       self.CC = CarController(self.cp.dbc_name, CP.enableCamera)
 

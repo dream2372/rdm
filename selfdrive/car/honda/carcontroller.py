@@ -100,7 +100,7 @@ class CarController(object):
       hud_car = 0
 
     # For lateral control-only, send chimes as a beep since we don't send 0x1fa
-    if CS.CP.radarOffCan:
+    if CS.CP.radarOffCan or car_fingerprint in (CAR.CIVIC_HATCH):
       snd_beep = snd_beep if snd_beep is not 0 else snd_chime
 
     #print chime, alert_id, hud_alert
