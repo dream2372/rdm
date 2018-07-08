@@ -32,7 +32,7 @@ def create_long_command(packer, gas_amount, apply_brake, idx):
   values = {
     "GAS_COMMAND": 0xd0,
     "RELATED_TO_GAS": 0x45,
-    "CONTROL_ON": 0x05,
+    #"CONTROL_ON": 0x05,
     #"GAS_BRAKE": gasbrake,
   }
   return packer.make_can_msg("ACC_CONTROL", 0, values, idx)
