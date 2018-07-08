@@ -139,13 +139,13 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
     }
     commands.append(packer.make_can_msg('RADAR_HUD', 0, radar_hud_values, idx))
 
-  if True:
-    commands.append(packer.make_can_msg('HIGHBEAM_CONTROL', 0, {'HIGHBEAMS_ON': False}, idx))
-    radar_hud_values = {
-      'ACC_ALERTS': hud.acc_alert,
-      'SET_TO_1': 0x01,
-    }
-    commands.append(packer.make_can_msg('RADAR_HUD', 0, radar_hud_values, idx))
+  # if True:
+  #   commands.append(packer.make_can_msg('HIGHBEAM_CONTROL', 0, {'HIGHBEAMS_ON': False}, idx))
+  #   radar_hud_values = {
+  #     'ACC_ALERTS': hud.acc_alert,
+  #     'SET_TO_1': 0x01,
+  #   }
+  #   commands.append(packer.make_can_msg('RADAR_HUD', 0, radar_hud_values, idx))
   return commands
 
 
