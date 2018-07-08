@@ -101,10 +101,10 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
       bus = 0
       acc_hud_values = {
         'CRUISE_SPEED': hud.v_cruise,
-        'ENABLE_MINI_CAR': hud.mini_car,
+        #'ENABLE_MINI_CAR': hud.mini_car,
         'SET_TO_1': 0x01,
         #'HUD_LEAD': hud.car,
-        'HUD_DISTANCE': 0x02,
+        #'HUD_DISTANCE': 0x02,
         'SET_TO_X3': 0x03,
       }
   else:
