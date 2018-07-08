@@ -31,7 +31,6 @@ def make_can_msg(addr, dat, idx, alt):
 def create_long_command(packer, gas_amount, apply_brake, idx):
 
   values = {
-    "SET_TO_1": 0x0,
     #"GAS_COMMAND": gasbrake2,
     #"RELATED_TO_GAS": related_to_gas,
     "CONTROL_ON": 0x05,
@@ -140,7 +139,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
     }
     commands.append(packer.make_can_msg('RADAR_HUD', 0, radar_hud_values, idx))
 
-  if not CS.CP.radarOffCan and car_fingerprint in (CAR.CIVIC_HATCH):
+  if CS.CP.enableRadar:
     commands.append(packer.make_can_msg('HIGHBEAM_CONTROL', 0, {'HIGHBEAMS_ON': False}, idx))
     radar_hud_values = {
       'ACC_ALERTS': hud.acc_alert,
