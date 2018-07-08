@@ -105,6 +105,8 @@ class CarInterface(object):
       self.sendcan = sendcan
       print "sendcan is",
       print self.sendcan
+      print self.cp
+      print CP
       self.CC = CarController(self.cp.dbc_name, CP.enableCamera)
 
     if self.CS.CP.carFingerprint == CAR.ACURA_ILX:
