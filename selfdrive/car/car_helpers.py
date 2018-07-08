@@ -97,6 +97,4 @@ def get_car(logcan, sendcan=None, passive=True):
     return None, None
 
   params = interface_cls.get_params(candidate, fingerprints)
-  print "params is",
-  print params
   return interface_cls(params, sendcan), params
