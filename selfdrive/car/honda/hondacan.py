@@ -139,7 +139,6 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
       'LEAD_DISTANCE': 0x1e,
     }
     commands.append(packer.make_can_msg('RADAR_HUD', 0, radar_hud_values, idx))
-    return commands
 
   if not CS.CP.radarOffCan and car_fingerprint in (CAR.CIVIC_HATCH):
     commands.append(packer.make_can_msg('HIGHBEAM_CONTROL', 0, {'HIGHBEAMS_ON': False}, idx))
