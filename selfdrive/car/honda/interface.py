@@ -94,6 +94,7 @@ class CarInterface(object):
     self.CS = CarState(CP)
     self.VM = VehicleModel(CP)
 
+    print "DBC is " print self.cp.dbc_name
     # sending if read only is False
     if sendcan is not None:
       self.sendcan = sendcan
