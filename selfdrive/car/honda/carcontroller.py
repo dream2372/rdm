@@ -154,9 +154,13 @@ class CarController(object):
       # Send gas and brake commands.
       if (frame % 2) == 0:
         idx = (frame / 2) % 4
-        can_sends.append(
-          hondacan.create_brake_command(self.packer, apply_brake, pcm_override,
-                                      pcm_cancel_cmd, hud.chime, hud.fcw, idx))
+        if CS.CP.carFingerprint == CAR.CIVIC_HATCH:
+          can_sends.append(hondacan.create_long_command(self.packer, gas_amount, apply_brake, idx))
+          can_sends.append(hondacan.create_1fa(self.packer, idx))
+        else:
+          can_sends.append(
+            hondacan.create_brake_command(self.packer, apply_brake, pcm_override,
+                                        pcm_cancel_cmd, hud.chime, hud.fcw, idx))
         if CS.CP.enableGasInterceptor:
           # send exactly zero if apply_gas is zero. Interceptor will send the max between read value and apply_gas.
           # This prevents unexpected pedal range rescaling
@@ -167,9 +171,9 @@ class CarController(object):
         radar_send_step = 2
       else:
         radar_send_step = 5
-
-      if (frame % radar_send_step) == 0:
-        idx = (frame/radar_send_step) % 4
-        can_sends.extend(hondacan.create_radar_commands(CS.v_ego, CS.CP.carFingerprint, idx))
+      if not CS.CP.enableRadar:
+        if (frame % radar_send_step) == 0:
+          idx = (frame/radar_send_step) % 4
+          can_sends.extend(hondacan.create_radar_commands(CS.v_ego, CS.CP.carFingerprint, idx))
 
     sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan').to_bytes())

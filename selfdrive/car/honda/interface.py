@@ -20,6 +20,7 @@ except ImportError:
 # msgs sent for steering controller by camera module on can 0.
 # those messages are mutually exclusive on CRV and non-CRV cars
 CAMERA_MSGS = [0xe4, 0x194]
+ACC_MSGS = [0x1df]
 
 
 def compute_gb_honda(accel, speed):
@@ -151,7 +152,12 @@ class CarInterface(object):
       ret.safetyModel = car.CarParams.SafetyModels.honda
       ret.enableCamera = not any(x for x in CAMERA_MSGS if x in fingerprint)
       ret.enableGasInterceptor = 0x201 in fingerprint
+    ret.enableRadar = not any(x for x in ACC_MSGS if x in fingerprint)
+    if ret.enableRadar:
+      ret.radarOffCan = False
+
     print "ECU Camera Simulated: ", ret.enableCamera
+    print "ECU Radar Simulated: ", ret.enableRadar
     print "ECU Gas Interceptor: ", ret.enableGasInterceptor
 
     ret.enableCruise = not ret.enableGasInterceptor

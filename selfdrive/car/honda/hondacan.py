@@ -27,6 +27,20 @@ def make_can_msg(addr, dat, idx, alt):
     dat = fix(dat, addr)
   return [addr, 0, dat, alt]
 
+def create_long_command(packer, gas_amount, apply_brake, idx):
+
+  values = {
+    "SET_TO_1": 0x0,
+    #"GAS_COMMAND": gasbrake2,
+    #"RELATED_TO_GAS": related_to_gas,
+    "CONTROL_ON": 0x05,
+    #"GAS_BRAKE": gasbrake,
+  }
+  return packer.make_can_msg("ACC_CONTROL", 0, values, idx)
+
+#create blank 0x1fa on CIVIC_HATCH with no bosch radar
+def create_1fa(packer, idx):
+  return packer.make_can_msg("BLANK_1FA", 0, idx)
 
 def create_brake_command(packer, apply_brake, pcm_override, pcm_cancel_cmd, chime, fcw, idx):
   """Creates a CAN message for the Honda DBC BRAKE_COMMAND."""
@@ -49,7 +63,6 @@ def create_brake_command(packer, apply_brake, pcm_override, pcm_cancel_cmd, chim
   }
   return packer.make_can_msg("BRAKE_COMMAND", 0, values, idx)
 
-
 def create_gas_command(packer, gas_amount, idx):
   """Creates a CAN message for the Honda DBC GAS_COMMAND."""
   enable = gas_amount > 0.001
@@ -70,7 +83,7 @@ def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, i
     "STEER_TORQUE_REQUEST": lkas_active,
   }
   # Set bus 2 for accord and new crv.
-  bus = 2 if car_fingerprint in (CAR.CRV_5G, CAR.ACCORD, CAR.CIVIC_HATCH) else 0
+  bus = 2 if car_fingerprint in (CAR.CRV_5G, CAR.ACCORD, CAR.CIVIC_HATCH) and CS.CP.radarOffCan else 0
   return packer.make_can_msg("STEERING_CONTROL", bus, values, idx)
 
 
@@ -82,17 +95,28 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
   # Bosch sends commands to bus 2.
   if car_fingerprint in (CAR.CRV_5G, CAR.ACCORD, CAR.CIVIC_HATCH):
     bus = 2
-  else:
-    acc_hud_values = {
-      'PCM_SPEED': pcm_speed * CV.MS_TO_KPH,
-      'PCM_GAS': hud.pcm_accel,
-      'CRUISE_SPEED': hud.v_cruise,
-      'ENABLE_MINI_CAR': hud.mini_car,
-      'HUD_LEAD': hud.car,
-      'SET_ME_X03': 0x03,
-      'SET_ME_X03_2': 0x03,
-      'SET_ME_X01': 0x01,
-    }
+  if not CS.CP.radarOffCan:
+    if car_fingerprint in (CAR.CIVIC_HATCH):
+      bus = 0
+      acc_hud_values = {
+        'CRUISE_SPEED': pcm_speed * CV.MS_TO_KPH,
+        'ENABLE_MINI_CAR': hud.mini_car,
+        'SET_TO_1': 0x01,
+        'HUD_LEAD': hud.car,
+        'HUD_DISTANCE': 0x03,
+        'SET_ME_X03': 0x03,
+      }
+    else:
+      acc_hud_values = {
+        'PCM_SPEED': pcm_speed * CV.MS_TO_KPH,
+        'PCM_GAS': hud.pcm_accel,
+        'CRUISE_SPEED': hud.v_cruise,
+        'ENABLE_MINI_CAR': hud.mini_car,
+        'HUD_LEAD': hud.car,
+        'SET_ME_X03': 0x03,
+        'SET_ME_X03_2': 0x03,
+        'SET_ME_X01': 0x01,
+      }
     commands.append(packer.make_can_msg("ACC_HUD", 0, acc_hud_values, idx))
 
   lkas_hud_values = {
@@ -112,6 +136,15 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
       'LEAD_SPEED': 0x1fe,  # What are these magic values
       'LEAD_STATE': 0x7,
       'LEAD_DISTANCE': 0x1e,
+    }
+    commands.append(packer.make_can_msg('RADAR_HUD', 0, radar_hud_values, idx))
+    return commands
+
+  if not CS.CP.radarOffCan and car_fingerprint in (CAR.CIVIC_HATCH):
+    commands.append(packer.make_can_msg('HIGHBEAM_CONTROL', 0, {'HIGHBEAMS_ON': False}, idx))
+    radar_hud_values = {
+      'ACC_ALERTS': hud.acc_alert,
+      'SET_TO_1': 0x01,
     }
     commands.append(packer.make_can_msg('RADAR_HUD', 0, radar_hud_values, idx))
   return commands
