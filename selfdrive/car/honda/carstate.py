@@ -325,6 +325,9 @@ class CarState(object):
                             cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH'] != self.brake_switch_ts)
           self.brake_switch_prev = self.brake_switch
           self.brake_switch_ts = cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH']
+
+          self.v_cruise_pcm = 0 ## TODO: do this
+          self.v_cruise_pcm_prev = 0 ## TODO: do this
       else:
         self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']
         self.cruise_speed_offset = calc_cruise_offset(cp.vl["CRUISE_PARAMS"]['CRUISE_SPEED_OFFSET'], self.v_ego)
