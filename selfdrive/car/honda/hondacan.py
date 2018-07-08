@@ -37,6 +37,17 @@ def create_long_command(packer, gas_amount, apply_brake, idx):
   }
   return packer.make_can_msg("ACC_CONTROL", 0, values, idx)
 
+def create_acc_control_on(packer, idx):
+  values = {
+  "SET_TO_3": 0x03,
+  "CONTROL_ON": 0x0,
+  "SET_TO_FF": 0xff,
+  "SET_TO_75": 0x75,
+  "SET_TO_30": 0x30,
+  }
+
+  return packer.make_can_msg("ACC_CONTROL_ON", 0, values, idx)
+
 #create blank 0x1fa on CIVIC_HATCH with no bosch radar
 def create_1fa(packer, idx):
   values = {}
