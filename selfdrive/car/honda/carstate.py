@@ -121,6 +121,15 @@ def get_can_signals(CP):
     signals += [("CRUISE_SPEED_PCM", "CRUISE", 0),
                 ("CRUISE_SPEED_OFFSET", "CRUISE_PARAMS", 0)]
     checks += [("CRUISE_PARAMS", 50)]
+    if CP.carFingerprint != CAR.CIVIC_HATCH:
+      signals += [("BRAKE_PRESSED", "BRAKE_MODULE", 0)]
+      checks += [("BRAKE_MODULE", 50)]
+    signals += [("CAR_GAS", "GAS_PEDAL_2", 0),
+                ("MAIN_ON", "SCM_FEEDBACK", 0),
+                ("EPB_STATE", "EPB_STATUS", 0),
+                ("BRAKE_HOLD_ACTIVE", "VSA_STATUS", 0),
+    checks += [("GAS_PEDAL_2", 100)]
+
 
   if CP.carFingerprint == CAR.ACCORD:
     signals += [("DRIVERS_DOOR_OPEN", "SCM_FEEDBACK", 1)]
