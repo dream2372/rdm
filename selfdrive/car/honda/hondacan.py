@@ -96,7 +96,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
   # Bosch sends commands to bus 2.
   if car_fingerprint in (CAR.CRV_5G, CAR.ACCORD, CAR.CIVIC_HATCH):
     bus = 2
-  if not CS.CP.radarOffCan:
+  if CS.CP.enableRadar:
     if car_fingerprint in (CAR.CIVIC_HATCH):
       bus = 0
       acc_hud_values = {
@@ -107,17 +107,17 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
         'HUD_DISTANCE': 0x03,
         'SET_ME_X03': 0x03,
       }
-    else:
-      acc_hud_values = {
-        'PCM_SPEED': pcm_speed * CV.MS_TO_KPH,
-        'PCM_GAS': hud.pcm_accel,
-        'CRUISE_SPEED': hud.v_cruise,
-        'ENABLE_MINI_CAR': hud.mini_car,
-        'HUD_LEAD': hud.car,
-        'SET_ME_X03': 0x03,
-        'SET_ME_X03_2': 0x03,
-        'SET_ME_X01': 0x01,
-      }
+  else:
+    acc_hud_values = {
+      'PCM_SPEED': pcm_speed * CV.MS_TO_KPH,
+      'PCM_GAS': hud.pcm_accel,
+      'CRUISE_SPEED': hud.v_cruise,
+      'ENABLE_MINI_CAR': hud.mini_car,
+      'HUD_LEAD': hud.car,
+      'SET_ME_X03': 0x03,
+      'SET_ME_X03_2': 0x03,
+      'SET_ME_X01': 0x01,
+    }
     commands.append(packer.make_can_msg('ACC_HUD', 0, acc_hud_values, idx))
 
   lkas_hud_values = {

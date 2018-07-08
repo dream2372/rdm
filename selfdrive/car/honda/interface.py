@@ -159,7 +159,6 @@ class CarInterface(object):
     ret.enableRadar = not any(x for x in ACC_MSGS if x in fingerprint)
     if ret.enableRadar:
       ret.safetyModel = car.CarParams.SafetyModels.honda
-      ret.radarOffCan = False
 
     print "ECU Camera Simulated: ", ret.enableCamera
     print "ECU Radar Simulated: ", ret.enableRadar
