@@ -39,7 +39,8 @@ def create_long_command(packer, gas_amount, apply_brake, idx):
 
 #create blank 0x1fa on CIVIC_HATCH with no bosch radar
 def create_1fa(packer, idx):
-  return packer.make_can_msg("BLANK_1FA", 0, idx)
+  values = {}
+  return packer.make_can_msg("BLANK_1FA", 0, values, idx)
 
 def create_brake_command(packer, apply_brake, pcm_override, pcm_cancel_cmd, chime, fcw, idx):
   """Creates a CAN message for the Honda DBC BRAKE_COMMAND."""
