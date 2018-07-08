@@ -3,7 +3,6 @@ import struct
 import common.numpy_fast as np
 from selfdrive.config import Conversions as CV
 from selfdrive.car.honda.values import CAR
-from selfdrive.car.honda.carstate import CarState
 
 # *** Honda specific ***
 def can_cksum(mm):
@@ -83,7 +82,8 @@ def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, i
     "STEER_TORQUE_REQUEST": lkas_active,
   }
   # Set bus 2 for accord and new crv.
-  bus = 2 if car_fingerprint in (CAR.CRV_5G, CAR.ACCORD, CAR.CIVIC_HATCH) and CS.CP.radarOffCan else 0
+  bus = 2 if car_fingerprint in (CAR.CRV_5G, CAR.ACCORD, CAR.CIVIC_HATCH) else 0
+  bus = 0
   return packer.make_can_msg("STEERING_CONTROL", bus, values, idx)
 
 
