@@ -100,7 +100,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
     if car_fingerprint in (CAR.CIVIC_HATCH):
       bus = 0
       acc_hud_values = {
-        'CRUISE_SPEED': hud_v_cruise,
+        'CRUISE_SPEED': hud.v_cruise,
         'ENABLE_MINI_CAR': hud.mini_car,
         'SET_TO_1': 0x01,
         'HUD_LEAD': hud.car,
