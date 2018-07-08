@@ -155,7 +155,7 @@ class CarController(object):
     if (frame % 2) == 0:
       idx = (frame / 2) % 4
       if CS.CP.enableRadar and CS.CP.carFingerprint == CAR.CIVIC_HATCH:
-        can_sends.append(hondacan.create_long_command(self.packer, gas_amount, apply_brake, idx))
+        can_sends.append(hondacan.create_long_command(self.packer, apply_gas, apply_brake, idx))
         can_sends.append(hondacan.create_1fa(self.packer, idx))
       else:
         can_sends.append(
