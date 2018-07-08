@@ -97,15 +97,14 @@ class CarInterface(object):
     print "DBC is",
     print self.cp.dbc_name
 
-    print "sendcan is",
-    print sendcan
-
     print "enableCamera is",
     print CP.enableCamera
 
     # sending if read only is False
     if sendcan is not None:
       self.sendcan = sendcan
+      print "sendcan is",
+      print self.sendcan
       self.CC = CarController(self.cp.dbc_name, CP.enableCamera)
 
     if self.CS.CP.carFingerprint == CAR.ACURA_ILX:
