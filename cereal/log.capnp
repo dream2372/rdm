@@ -1463,6 +1463,11 @@ struct Joystick {
   buttons @1: List(Bool);
 }
 
+struct visionKeyboard {
+  gas @0: UInt64;
+  brake @1: UInt64;
+}
+
 struct OrbOdometry {
   # timing first
   startMonoTime @0 :UInt64;
@@ -1582,5 +1587,6 @@ struct Event {
     orbKeyFrame @56 :OrbKeyFrame;
     uiLayoutState @57 :UiLayoutState;
     orbFeaturesSummary @58 :OrbFeaturesSummary;
+    visionKeyboard @59 :visionKeyboard;
   }
 }

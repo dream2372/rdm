@@ -5,6 +5,7 @@ from common.numpy_fast import clip
 from selfdrive.car.honda import hondacan
 from selfdrive.car.honda.values import AH, CruiseButtons, CAR
 from selfdrive.can.packer import CANPacker
+import zmq
 
 
 def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
@@ -63,6 +64,10 @@ class CarController(object):
     self.enable_camera = enable_camera
     self.packer = CANPacker(dbc_name)
 
+    context = zmq.Context()
+    poller = zmq.Poller()
+    keyboard = messaging.sub_sock(context, service_list['visionKeyboard'].port, conflate=True, poller=poller)
+
   def update(self, sendcan, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert, \
@@ -116,18 +121,37 @@ class CarController(object):
     # **** process the car messages ****
 
     # *** compute control surfaces ***
-    BRAKE_MAX = 1024/4
+    apply_gas = 0
+    apply_brake = 0
+    
+    for keyboard, event in poller.poll(500):
+      msg = keyboard.recv()
+      evt = log.Event.from_bytes(msg)
+
+      apply_gas = evt.visionKeyboard.gas
+      apply_brake = evt.visionKeyboard.brake
+
+    if CS.CP.visionRadar:
+      BRAKE_MAX = 800 #convert to negative later on
+    else:
+      BRAKE_MAX = 1024/4
     if CS.CP.carFingerprint in (CAR.ACURA_ILX):
       STEER_MAX = 0xF00
     elif CS.CP.carFingerprint in (CAR.CRV, CAR.ACURA_RDX):
       STEER_MAX = 0x3e8  # CR-V only uses 12-bits and requires a lower value (max value from energee)
     else:
       STEER_MAX = 0x1000
-
+    if CS.CP.visionRadar:
+      GAS_MAX = 500
     # steer torque is converted back to CAN reference (positive when steering right)
-    apply_gas = clip(actuators.gas, 0., 1.)
-    apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX - 1))
+    # if CS.CP.visionRadar:
+    #   apply_gas = int(clip(actuators.gas * GAS_MAX, 0, GAS_MAX - 1))
+    # else:
+    #   apply_gas = clip(actuators.gas, 0., 1.)
+    # apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX - 1))
     apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
+
+
 
     # any other cp.vl[0x18F]['STEER_STATUS'] is common and can happen during user override. sending 0 torque to avoid EPS sending error 5
     lkas_active = enabled and not CS.steer_not_allowed
@@ -145,7 +169,7 @@ class CarController(object):
       can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, idx))
 
     if CS.CP.radarOffCan:
-      if not CS.CP.enableRadar:
+      if not CS.CP.visionRadar:
         # If using stock ACC, spam cancel command to kill gas when OP disengages.
         if pcm_cancel_cmd:
           can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, idx))
@@ -154,7 +178,7 @@ class CarController(object):
     # Send gas and brake commands.
     if (frame % 2) == 0:
       idx = (frame / 2) % 4
-      if CS.CP.enableRadar and CS.CP.carFingerprint == CAR.CIVIC_HATCH:
+      if CS.CP.visionRadar and CS.CP.carFingerprint == CAR.CIVIC_HATCH:
         can_sends.append(hondacan.create_long_command(self.packer, apply_gas, apply_brake, idx))
         can_sends.append(hondacan.create_acc_control_on(self.packer, idx))
         can_sends.append(hondacan.create_1fa(self.packer, idx))
@@ -172,7 +196,7 @@ class CarController(object):
       radar_send_step = 2
     else:
       radar_send_step = 5
-    if not CS.CP.enableRadar:
+    if not CS.CP.visionRadar:
       if (frame % radar_send_step) == 0:
         idx = (frame/radar_send_step) % 4
         can_sends.extend(hondacan.create_radar_commands(CS.v_ego, CS.CP.carFingerprint, idx))

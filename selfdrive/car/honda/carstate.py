@@ -110,7 +110,7 @@ def get_can_signals(CP):
     if CP.carFingerprint != CAR.CIVIC_HATCH:
       signals += [("BRAKE_PRESSED", "BRAKE_MODULE", 0)]
       checks += [("BRAKE_MODULE", 50)]
-    if CP.enableRadar:
+    if CP.visionRadar:
       signals += [("CAR_GAS", "GAS_PEDAL_2", 0),
                   ("MAIN_ON", "SCM_FEEDBACK", 0),
                   ("EPB_STATE", "EPB_STATUS", 0),
@@ -183,6 +183,9 @@ class CarState(object):
 
     self.cruise_buttons = 0
     self.cruise_setting = 0
+    self.op_cruise_enabled = 0
+    self.op_cruise_speed = 0
+    self.op_cruise_speed_prev = 0
     self.v_cruise_pcm_prev = 0
     self.blinker_on = 0
 
@@ -263,8 +266,10 @@ class CarState(object):
     self.gear = 0 if self.CP.carFingerprint == CAR.CIVIC else cp.vl["GEARBOX"]['GEAR']
     self.angle_steers = cp.vl["STEERING_SENSORS"]['STEER_ANGLE']
     self.angle_steers_rate = cp.vl["STEERING_SENSORS"]['STEER_ANGLE_RATE']
-
-    self.cruise_setting = cp.vl["SCM_BUTTONS"]['CRUISE_SETTING']
+    if self.CP.visionRadar:
+      self.cruise_setting = self.CP.op_cruise_state
+    else:
+      self.cruise_setting = cp.vl["SCM_BUTTONS"]['CRUISE_SETTING']
     self.cruise_buttons = cp.vl["SCM_BUTTONS"]['CRUISE_BUTTONS']
 
     self.blinker_on = cp.vl["SCM_FEEDBACK"]['LEFT_BLINKER'] or cp.vl["SCM_FEEDBACK"]['RIGHT_BLINKER']
@@ -299,7 +304,7 @@ class CarState(object):
     self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']
 
     if self.CP.radarOffCan:
-      if self.CP.enableRadar:
+      if self.CP.visionRadar:
         if self.CP.carFingerprint == CAR.CIVIC_HATCH:
           self.cruise_speed_offset = calc_cruise_offset(0, self.v_ego)
           self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']

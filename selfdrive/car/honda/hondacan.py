@@ -27,13 +27,21 @@ def make_can_msg(addr, dat, idx, alt):
     dat = fix(dat, addr)
   return [addr, 0, dat, alt]
 
-def create_long_command(packer, gas_amount, apply_brake, idx):
+def create_long_command(packer, apply_gas, apply_brake, idx):
+  apply_brake = apply_brake * -1 #braking is negative on this signal
+  if apply_gas > 0:
+    apply_brake = 0
+  if apply_brake < 0:
+    apply_gas = 0
+
+  gasbrake = gas_amount + apply_brake
+
 
   values = {
     "GAS_COMMAND": 0xd0,
     "RELATED_TO_GAS": 0x45,
     #"CONTROL_ON": 0x05,
-    #"GAS_BRAKE": gasbrake,
+    "GAS_BRAKE": gasbrake,
   }
   return packer.make_can_msg("ACC_CONTROL", 0, values, idx)
 
@@ -95,7 +103,8 @@ def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, i
   }
   # Set bus 2 for accord and new crv.
   bus = 2 if car_fingerprint in (CAR.CRV_5G, CAR.ACCORD, CAR.CIVIC_HATCH) else 0
-  bus = 0
+  if True:
+    bus = 0
   return packer.make_can_msg("STEERING_CONTROL", bus, values, idx)
 
 
@@ -112,10 +121,10 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
       bus = 0
       acc_hud_values = {
         'CRUISE_SPEED': hud.v_cruise,
-        #'ENABLE_MINI_CAR': hud.mini_car,
+        'ENABLE_MINI_CAR': hud.mini_car,
         'SET_TO_1': 0x01,
-        #'HUD_LEAD': hud.car,
-        #'HUD_DISTANCE': 0x02,
+        'HUD_LEAD': hud.car,
+        'HUD_DISTANCE': 0x02,
         'SET_TO_X3': 0x03,
       }
   else:

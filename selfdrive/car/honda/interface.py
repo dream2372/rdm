@@ -152,12 +152,12 @@ class CarInterface(object):
       ret.safetyModel = car.CarParams.SafetyModels.honda
       ret.enableGasInterceptor = 0x201 in fingerprint
     ret.enableCamera = not any(x for x in CAMERA_MSGS if x in fingerprint)
-    ret.enableRadar = not any(x for x in ACC_MSGS if x in fingerprint)
-    if ret.enableRadar:
+    ret.visionRadar = not any(x for x in ACC_MSGS if x in fingerprint)
+    if ret.visionRadar:
       ret.safetyModel = car.CarParams.SafetyModels.honda
 
     print "ECU Camera Simulated: ", ret.enableCamera
-    print "ECU Radar Simulated: ", ret.enableRadar
+    print "ECU Radar Simulated: ", ret.visionRadar
     print "ECU Gas Interceptor: ", ret.enableGasInterceptor
 
     ret.enableCruise = not ret.enableGasInterceptor
@@ -398,11 +398,18 @@ class CarInterface(object):
     ret.steeringPressed = self.CS.steer_override
 
     # cruise state
-    ret.cruiseState.enabled = self.CS.pcm_acc_status != 0
-    ret.cruiseState.speed = self.CS.v_cruise_pcm * CV.KPH_TO_MS
-    ret.cruiseState.available = bool(self.CS.main_on)
-    ret.cruiseState.speedOffset = self.CS.cruise_speed_offset
-    ret.cruiseState.standstill = False
+    if ret.visionRadar:
+      ret.cruiseState.enabled = self.CC.enabled
+      ret.cruiseState.speed = c.hudControl.setSpeed #use speed that controlsd stores already in meters/sec
+      ret.cruiseState.available = bool(self.CS.main_on)
+      ret.cruiseState.speedOffset = 0 ## TODO:
+      ret.cruiseState.standstill = False
+    else:
+      ret.cruiseState.enabled = self.CS.pcm_acc_status != 0
+      ret.cruiseState.speed = self.CS.v_cruise_pcm * CV.KPH_TO_MS
+      ret.cruiseState.available = bool(self.CS.main_on)
+      ret.cruiseState.speedOffset = self.CS.cruise_speed_offset
+      ret.cruiseState.standstill = False
 
     # TODO: button presses
     buttonEvents = []
