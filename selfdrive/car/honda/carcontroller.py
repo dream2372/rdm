@@ -62,6 +62,7 @@ class CarController(object):
     self.braking = False
     self.brake_steady = 0.
     self.brake_last = 0.
+    self.enabled = False
     self.enable_camera = enable_camera
     self.packer = CANPacker(dbc_name)
 
@@ -74,6 +75,7 @@ class CarController(object):
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert, \
              snd_beep, snd_chime):
 
+    self.enabled = enabled
     """ Controls thread """
 
     if not self.enable_camera:
