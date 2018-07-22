@@ -422,7 +422,7 @@ class CarInterface(object):
     # cruise state
     if self.CP.visionRadar:
       ret.cruiseState.enabled = c.enabled
-      ret.cruiseState.speed = c.hudControl.setSpeed #use speed that controlsd stores already in meters/sec
+      ret.cruiseState.speed = hud_v_cruise
       ret.cruiseState.available = bool(self.CS.main_on)
       ret.cruiseState.speedOffset = 0 ## TODO:
       ret.cruiseState.standstill = False
