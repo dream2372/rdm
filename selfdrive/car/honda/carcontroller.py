@@ -7,6 +7,7 @@ from selfdrive.car.honda.values import AH, CruiseButtons, CAR
 from selfdrive.can.packer import CANPacker
 import zmq
 import selfdrive.messaging as messaging
+from selfdrive.services import service_list
 
 def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   # hyst params... TODO: move these to VehicleParams
