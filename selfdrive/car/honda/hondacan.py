@@ -27,14 +27,17 @@ def make_can_msg(addr, dat, idx, alt):
     dat = fix(dat, addr)
   return [addr, 0, dat, alt]
 
-def create_long_command(packer, apply_gas, apply_brake, idx):
+def create_long_command(packer, enabled, apply_gas, apply_brake, idx):
   apply_brake = apply_brake * -1 #braking is negative on this signal
   if apply_gas > 0:
     apply_brake = 0
   if apply_brake < 0:
     apply_gas = 0
-
-  gasbrake = gas_amount + apply_brake
+  #a bit of safety here
+  if not enabled:
+    apply_gas = 0
+    apply_brake = 0
+  gasbrake = apply_gas + apply_brake
 
 
   values = {

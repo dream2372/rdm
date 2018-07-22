@@ -120,7 +120,7 @@ class CarController(object):
     # *** compute control surfaces ***
     apply_gas = 0
     apply_brake = 0
-    
+
     for keyboard, event in poller.poll(500):
       msg = keyboard.recv()
       evt = log.Event.from_bytes(msg)
@@ -176,7 +176,7 @@ class CarController(object):
     if (frame % 2) == 0:
       idx = (frame / 2) % 4
       if CS.CP.visionRadar and CS.CP.carFingerprint == CAR.CIVIC_HATCH:
-        can_sends.append(hondacan.create_long_command(self.packer, apply_gas, apply_brake, idx))
+        can_sends.append(hondacan.create_long_command(self.packer, enabled, apply_gas, apply_brake, idx))
         can_sends.append(hondacan.create_acc_control_on(self.packer, idx))
         can_sends.append(hondacan.create_1fa(self.packer, idx))
       else:
