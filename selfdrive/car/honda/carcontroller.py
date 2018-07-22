@@ -125,12 +125,12 @@ class CarController(object):
     apply_gas = 0
     apply_brake = 0
 
-    for keyboard, event in poller.poll(500):
-      msg = keyboard.recv()
-      evt = log.Event.from_bytes(msg)
-
-      apply_gas = evt.visionKeyboard.gas
-      apply_brake = evt.visionKeyboard.brake
+    # for keyboard, event in poller.poll(500):
+    #   msg = keyboard.recv()
+    #   evt = log.Event.from_bytes(msg)
+    #
+    #   apply_gas = evt.visionKeyboard.gas
+    #   apply_brake = evt.visionKeyboard.brake
 
     if CS.CP.visionRadar:
       BRAKE_MAX = 800 #convert to negative later on
