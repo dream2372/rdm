@@ -212,8 +212,6 @@ struct CarControl {
   cruiseControl @4 :CruiseControl;
   hudControl @5 :HUDControl;
 
-  opcruiseenabled @8 :Bool;
-
   struct Actuators {
     # range from 0.0 - 1.0
     gas @0: Float32;
