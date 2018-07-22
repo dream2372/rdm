@@ -420,7 +420,7 @@ class CarInterface(object):
     ret.steeringPressed = self.CS.steer_override
 
     # cruise state
-    if ret.visionRadar:
+    if self.CP.visionRadar:
       ret.cruiseState.enabled = self.CC.enabled
       ret.cruiseState.speed = c.hudControl.setSpeed #use speed that controlsd stores already in meters/sec
       ret.cruiseState.available = bool(self.CS.main_on)
