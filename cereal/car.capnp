@@ -212,7 +212,7 @@ struct CarControl {
   cruiseControl @4 :CruiseControl;
   hudControl @5 :HUDControl;
 
-  op_cruise_enabled @8 :
+  op_cruise_enabled @8 :Bool;
 
   struct Actuators {
     # range from 0.0 - 1.0
