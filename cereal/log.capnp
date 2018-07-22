@@ -1474,7 +1474,7 @@ struct Joystick {
   buttons @1: List(Bool);
 }
 
-struct visionKeyboard {
+struct VisionKeyboard {
   gas @0: UInt64;
   brake @1: UInt64;
 }
@@ -1604,6 +1604,6 @@ struct Event {
     uiLayoutState @57 :UiLayoutState;
     orbFeaturesSummary @58 :OrbFeaturesSummary;
     driverMonitoring @59 :DriverMonitoring;
-    visionKeyboard @60 :visionKeyboard;
+    visionKeyboard @60 :VisionKeyboard;
   }
 }
