@@ -27,31 +27,35 @@ def make_can_msg(addr, dat, idx, alt):
     dat = fix(dat, addr)
   return [addr, 0, dat, alt]
 
-def create_long_command(packer, enabled, apply_gas, apply_brake, idx):
-  apply_brake = apply_brake * -1 #braking is negative on this signal
-  if apply_gas > 0:
-    apply_brake = 0
-  if apply_brake < 0:
-    apply_gas = 0
-  #a bit of safety here
-  if not enabled:
-    apply_gas = 0
-    apply_brake = 0
-  gasbrake = apply_gas + apply_brake
+def create_long_command(packer, enabled, accel, idx):
+  #we control engine torque request on bosch
+  # if apply_gas > 0:
+  #   apply_brake = 0
+  # if apply_brake < 0:
+  #   apply_gas = 0
 
+  #set the other things
+  control_on = 5 if enabled else 0
+  state_flag = 0 if accel >= -56 else 69 #the target for the state flip seems to be variable. been seen as high was -56 or -59 and low as -296
+  if state_flag == 69 and accel < 0.00:
+    gas_command = 208
+  else:
+    gas_command = accel
 
   values = {
-    "GAS_COMMAND": 0xd0,
-    "RELATED_TO_GAS": 0x45,
-    #"CONTROL_ON": 0x05,
-    "GAS_BRAKE": gasbrake,
+    "GAS_COMMAND": gas_command,
+    "STATE_FLAG": state_flag,
+    "CONTROL_ON": control_on,
+    "GAS_BRAKE": accel,
   }
   return packer.make_can_msg("ACC_CONTROL", 0, values, idx)
 
-def create_acc_control_on(packer, idx):
+def create_acc_control_on(packer, enabled, idx):
+  control_on = 5 if enabled else 0
+
   values = {
   "SET_TO_3": 0x03,
-  "CONTROL_ON": 0x0,
+  "CONTROL_ON": control_on,
   "SET_TO_FF": 0xff,
   "SET_TO_75": 0x75,
   "SET_TO_30": 0x30,

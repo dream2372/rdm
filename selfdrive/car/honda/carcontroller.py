@@ -9,6 +9,12 @@ import zmq
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list
 
+# Accel limits
+ACCEL_HYST_GAP = 0.02  # don't change accel command for small oscilalitons within this value
+ACCEL_MAX = 1.5  # 1.5 m/s2
+ACCEL_MIN = -3.0 # 3   m/s2
+ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
+
 def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   # hyst params... TODO: move these to VehicleParams
   brake_hyst_on = 0.02     # to activate brakes exceed this value
@@ -34,6 +40,19 @@ def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
 
   return brake, braking, brake_steady
 
+def accel_hysteresis(accel, accel_steady, enabled):
+
+  # for small accel oscillations within ACCEL_HYST_GAP, don't change the accel command
+  if not enabled:
+    # send 0 when disabled, otherwise acc faults
+    accel_steady = 0.
+  elif accel > accel_steady + ACCEL_HYST_GAP:
+    accel_steady = accel - ACCEL_HYST_GAP
+  elif accel < accel_steady - ACCEL_HYST_GAP:
+    accel_steady = accel + ACCEL_HYST_GAP
+  accel = accel_steady
+
+  return accel, accel_steady
 
 def process_hud_alert(hud_alert):
   # initialize to no alert
@@ -62,6 +81,7 @@ class CarController(object):
     self.braking = False
     self.brake_steady = 0.
     self.brake_last = 0.
+    self.accel_steady = 0.
     self.enable_camera = enable_camera
     self.packer = CANPacker(dbc_name)
 
@@ -74,8 +94,8 @@ class CarController(object):
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert, \
              snd_beep, snd_chime):
 
-    self.enabled = enabled
     """ Controls thread """
+    CS.setspeed = hud_v_cruise
 
     if not self.enable_camera:
       return
@@ -121,8 +141,8 @@ class CarController(object):
     # **** process the car messages ****
 
     # *** compute control surfaces ***
-    apply_gas = 0
-    apply_brake = 0
+    # apply_gas = 0
+    # apply_brake = 0
 
     # for keyboard, event in poller.poll(500):
     #   msg = keyboard.recv()
@@ -143,15 +163,16 @@ class CarController(object):
       STEER_MAX = 0x1000
     if CS.CP.visionRadar:
       GAS_MAX = 500
-    # steer torque is converted back to CAN reference (positive when steering right)
-    # if CS.CP.visionRadar:
-    #   apply_gas = int(clip(actuators.gas * GAS_MAX, 0, GAS_MAX - 1))
-    # else:
-    #   apply_gas = clip(actuators.gas, 0., 1.)
-    # apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX - 1))
+    #steer torque is converted back to CAN reference (positive when steering right)
+    if CS.CP.visionRadar:
+      # gas and brake
+      apply_accel = actuators.gas - actuators.brake
+      apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady, enabled)
+      apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
+    else:
+      apply_gas = clip(actuators.gas, 0., 1.)
+      apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX))
     apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
-
-
 
     # any other cp.vl[0x18F]['STEER_STATUS'] is common and can happen during user override. sending 0 torque to avoid EPS sending error 5
     lkas_active = enabled and not CS.steer_not_allowed
@@ -179,8 +200,8 @@ class CarController(object):
     if (frame % 2) == 0:
       idx = (frame / 2) % 4
       if CS.CP.visionRadar and CS.CP.carFingerprint == CAR.CIVIC_HATCH:
-        can_sends.append(hondacan.create_long_command(self.packer, enabled, apply_gas, apply_brake, idx))
-        can_sends.append(hondacan.create_acc_control_on(self.packer, idx))
+        can_sends.append(hondacan.create_long_command(self.packer, enabled, apply_accel, idx))
+        can_sends.append(hondacan.create_acc_control_on(self.packer, enabled, idx))
         can_sends.append(hondacan.create_1fa(self.packer, idx))
       else:
         can_sends.append(

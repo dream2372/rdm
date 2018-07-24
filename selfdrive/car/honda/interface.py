@@ -150,11 +150,9 @@ class CarInterface(object):
     if ret.visionRadar:
       ret.safetyModel = car.CarParams.SafetyModels.honda
 
-    print "ECU Camera Simulated: ", ret.enableCamera
-    print "ECU Radar Simulated: ", ret.visionRadar
-    print "ECU Gas Interceptor: ", ret.enableGasInterceptor
     cloudlog.warn("ECU Camera Simulated: %r", ret.enableCamera)
     cloudlog.warn("ECU Gas Interceptor: %r", ret.enableGasInterceptor)
+    cloudlog.warn("ECU Radar Simulated: %r", ret.visionRadar)
 
     ret.enableCruise = not ret.enableGasInterceptor
 
@@ -420,18 +418,11 @@ class CarInterface(object):
     ret.steeringPressed = self.CS.steer_override
 
     # cruise state
-    if self.CP.visionRadar:
-      ret.cruiseState.enabled = c.enabled
-      ret.cruiseState.speed = self.CS.v_cruise_pcm * CV.KPH_TO_MS
-      ret.cruiseState.available = bool(self.CS.main_on)
-      ret.cruiseState.speedOffset = 0 ## TODO:
-      ret.cruiseState.standstill = False
-    else:
-      ret.cruiseState.enabled = self.CS.pcm_acc_status != 0
-      ret.cruiseState.speed = self.CS.v_cruise_pcm * CV.KPH_TO_MS
-      ret.cruiseState.available = bool(self.CS.main_on)
-      ret.cruiseState.speedOffset = self.CS.cruise_speed_offset
-      ret.cruiseState.standstill = False
+    ret.cruiseState.enabled = self.CS.pcm_acc_status != 0
+    ret.cruiseState.speed = self.CS.v_cruise_pcm * CV.KPH_TO_MS
+    ret.cruiseState.available = bool(self.CS.main_on)
+    ret.cruiseState.speedOffset = self.CS.cruise_speed_offset
+    ret.cruiseState.standstill = False
 
     # TODO: button presses
     buttonEvents = []
@@ -544,6 +535,7 @@ class CarInterface(object):
 
     cur_time = sec_since_boot()
     enable_pressed = False
+
     # handle button presses
     for b in ret.buttonEvents:
 
@@ -551,6 +543,7 @@ class CarInterface(object):
       if b.type in ["accelCruise", "decelCruise"] and not b.pressed:
         self.last_enable_pressed = cur_time
         enable_pressed = True
+        ret.cruiseState.enabled = enable_pressed
 
       # do disable on button down
       if b.type == "cancel" and b.pressed:

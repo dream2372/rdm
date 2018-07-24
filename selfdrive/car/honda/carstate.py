@@ -188,6 +188,8 @@ class CarState(object):
     self.left_blinker_on = 0
     self.right_blinker_on = 0
 
+    self.setspeed = 0
+
     self.stopped = 0
 
     # vEgo kalman filter
@@ -308,8 +310,8 @@ class CarState(object):
           self.brake_switch_prev = self.brake_switch
           self.brake_switch_ts = cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH']
 
-          self.v_cruise_pcm = 0 ## TODO: do this
-          self.v_cruise_pcm_prev = 0 ## TODO: do this
+          self.v_cruise_pcm = self.setspeed
+          self.v_cruise_pcm_prev = self.v_cruise_pcm
       else:
         self.stopped = cp.vl["ACC_HUD"]['CRUISE_SPEED'] == 252.
         self.cruise_speed_offset = calc_cruise_offset(0, self.v_ego)
