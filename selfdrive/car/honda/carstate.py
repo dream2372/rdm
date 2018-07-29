@@ -314,7 +314,7 @@ class CarState(object):
           self.brake_switch_ts = cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH']
 
           self.v_cruise_pcm = self.setspeed
-          self.v_cruise_pcm_prev = self.setspeed
+          self.v_cruise_pcm_prev = self.v_cruise_pcm
       else:
         self.stopped = cp.vl["ACC_HUD"]['CRUISE_SPEED'] == 252.
         self.cruise_speed_offset = calc_cruise_offset(0, self.v_ego)
