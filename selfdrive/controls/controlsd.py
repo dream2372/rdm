@@ -268,6 +268,7 @@ def state_control(plan, CS, CP, state, events, v_cruise_kph, v_cruise_kph_last, 
                                       PL.PP.c_poly, PL.PP.c_prob, CS.steeringAngle,
                                       CS.steeringPressed)
 
+  print active
   # *** gas/brake PID loop ***
   actuators.gas, actuators.brake = LoC.update(active, CS.vEgo, CS.brakePressed, CS.standstill, CS.cruiseState.standstill,
                                               v_cruise_kph, plan.vTarget, plan.vTargetFuture, plan.aTarget,
@@ -511,7 +512,7 @@ def controlsd_thread(gctx=None, rate=100, default_bias=0.):
       prof.checkpoint("State transition")
 
     # compute actuators
-    actuators, v_cruise_kph, driver_status, angle_offset = state_control(plan, CS, CP, state, events, v_cruise_kph, 
+    actuators, v_cruise_kph, driver_status, angle_offset = state_control(plan, CS, CP, state, events, v_cruise_kph,
       v_cruise_kph_last, AM, rk, driver_status, PL, LaC, LoC, VM, angle_offset, passive)
     prof.checkpoint("State Control")
 
