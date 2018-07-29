@@ -141,28 +141,13 @@ class CarController(object):
     # **** process the car messages ****
 
     # *** compute control surfaces ***
-    # apply_gas = 0
-    # apply_brake = 0
-
-    # for keyboard, event in poller.poll(500):
-    #   msg = keyboard.recv()
-    #   evt = log.Event.from_bytes(msg)
-    #
-    #   apply_gas = evt.visionKeyboard.gas
-    #   apply_brake = evt.visionKeyboard.brake
-
-    if CS.CP.visionRadar:
-      BRAKE_MAX = 800 #convert to negative later on
-    else:
-      BRAKE_MAX = 1024/4
+    BRAKE_MAX = 1024/4
     if CS.CP.carFingerprint in (CAR.ACURA_ILX):
       STEER_MAX = 0xF00
     elif CS.CP.carFingerprint in (CAR.CRV, CAR.ACURA_RDX):
       STEER_MAX = 0x3e8  # CR-V only uses 12-bits and requires a lower value (max value from energee)
     else:
       STEER_MAX = 0x1000
-    if CS.CP.visionRadar:
-      GAS_MAX = 500
     #steer torque is converted back to CAN reference (positive when steering right)
     if CS.CP.visionRadar:
       # gas and brake
@@ -173,7 +158,7 @@ class CarController(object):
       apply_gas = clip(actuators.gas, 0., 1.)
       apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX))
     apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
-
+    
     # any other cp.vl[0x18F]['STEER_STATUS'] is common and can happen during user override. sending 0 torque to avoid EPS sending error 5
     lkas_active = enabled and not CS.steer_not_allowed
 
@@ -189,13 +174,12 @@ class CarController(object):
       idx = (frame/10) % 4
       can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, idx))
 
-    if CS.CP.radarOffCan:
-      if not CS.CP.visionRadar:
-        # If using stock ACC, spam cancel command to kill gas when OP disengages.
-        if pcm_cancel_cmd:
-          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, idx))
-        elif CS.stopped:
-          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx))
+    if CS.CP.radarOffCan and not CS.CP.visionRadar:
+      # If using stock ACC, spam cancel command to kill gas when OP disengages.
+      if pcm_cancel_cmd:
+        can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, idx))
+      elif CS.stopped:
+        can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx))
     # Send gas and brake commands.
     if (frame % 2) == 0:
       idx = (frame / 2) % 4

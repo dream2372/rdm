@@ -155,6 +155,7 @@ class CarInterface(object):
     cloudlog.warn("ECU Radar Simulated: %r", ret.visionRadar)
 
     ret.enableCruise = not ret.enableGasInterceptor
+    ret.enableCruise = not ret.visionRadar
 
     # kg of standard extra cargo to count for drive, gas, etc...
     std_cargo = 136
@@ -517,10 +518,10 @@ class CarInterface(object):
     # disable on pedals rising edge or when brake is pressed and speed isn't zero
     if (ret.gasPressed and not self.gas_pressed_prev) or \
        (ret.brakePressed and (not self.brake_pressed_prev or ret.vEgo > 0.001)):
-      events.append(create_event('pedalPressed', [ET.NO_ENTRY, ET.USER_DISABLE]))
+      events.append(create_event('pedalPressed', [ ET.NO_ENTRY, ET.USER_DISABLE]))
 
     if ret.gasPressed:
-      events.append(create_event('pedalPressed', [ET.PRE_ENABLE]))
+     events.append(create_event('pedalPressed', [ET.PRE_ENABLE]))
 
     # it can happen that car cruise disables while comma system is enabled: need to
     # keep braking if needed or if the speed is very low
@@ -543,7 +544,7 @@ class CarInterface(object):
       if b.type in ["accelCruise", "decelCruise"] and not b.pressed:
         self.last_enable_pressed = cur_time
         enable_pressed = True
-        ret.cruiseState.enabled = enable_pressed
+        #ret.cruiseState.enabled = enable_pressed
 
       # do disable on button down
       if b.type == "cancel" and b.pressed:
@@ -562,6 +563,7 @@ class CarInterface(object):
         self.last_enable_sent = cur_time
     elif enable_pressed:
       events.append(create_event('buttonEnable', [ET.ENABLE]))
+      #self.CS.v_cruise_pcm = self.CS.v_ego * CV.MS_TO_KPH
 
     ret.events = events
     ret.canMonoTimes = canMonoTimes
@@ -578,6 +580,7 @@ class CarInterface(object):
   def apply(self, c):
     if c.hudControl.speedVisible:
       hud_v_cruise = c.hudControl.setSpeed * CV.MS_TO_KPH
+      self.CS.setspeed = hud_v_cruise
     else:
       hud_v_cruise = 255
 
