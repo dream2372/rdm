@@ -31,18 +31,18 @@ def create_long_command(packer, enabled, accel, idx):
   #we control engine torque request/acceleration on bosch. initailize two variables as if we're disabled
   gas_command = 0.208
   state_flag = 69
-
+  accel = 0
   #get accel value back to can reference
   #accel = accel * 1000
 
   control_on = 5 if enabled else 0
   #set the state flag. This has at least 4 values, depending on what's going on.
-  if not enabled or accel < 0:
+  if not enabled or accel <= 0:
     state_flag = 69 #69 in decimal
   elif enabled and accel > 0:
     state_flag = 0
 
-  if not enabled or accel < 0:
+  if not enabled or accel <= 0:
     gas_command = 0.208
   if enabled and accel > 0:
     gas_command = accel
