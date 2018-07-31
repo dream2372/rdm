@@ -29,7 +29,7 @@ def make_can_msg(addr, dat, idx, alt):
 
 def create_long_command(packer, enabled, accel, idx):
   #we control engine torque request/acceleration on bosch. initailize two variables as if we're disabled
-  gas_command = 208
+  gas_command = 0.208
   state_flag = 69
 
   #get accel value back to can reference
@@ -43,7 +43,7 @@ def create_long_command(packer, enabled, accel, idx):
     state_flag = 0
 
   if not enabled or accel < 0:
-    gas_command = 208
+    gas_command = 0.208
   if enabled and accel > 0:
     gas_command = accel
 
