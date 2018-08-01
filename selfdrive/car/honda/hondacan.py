@@ -34,22 +34,21 @@ def create_long_command(packer, enabled, accel, idx):
 
   control_on = 5 if enabled else 0
 
-  #this is variable. # TODO: RE this switching point for gas command and state flag based on gas_brake/accel
-  switch_value = -0.11
+  #this is variable. # TODO: RE this switching point for gas command and state flag based on gas_brake
+  flop_threshold = -0.11
 
   #set the state flag. This has at least 4 values, depending on what's going on.
-  if not enabled or accel <= switch_value:
+  if not enabled or accel <= flop_threshold:
     state_flag = 69 #69 in decimal
     gas_command = 0.208
-  elif enabled or accel > switch_value:
+  elif enabled or accel > flop_threshold:
     state_flag = 0
     gas_command = accel
 
-
   #backup values if we need to hard disable to be able to drive
-  #state_flag = 0x45
-  #gas_command = 0xd0
-  #accel = 0x0
+  state_flag = 69
+  gas_command = 0.208
+  accel = 0
 
   #we dont set set_to_1 on CIVIC_HATCH.
   values = {
