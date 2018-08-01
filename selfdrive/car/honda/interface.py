@@ -354,7 +354,7 @@ class CarInterface(object):
     ret.steerMaxV = [1.]   # max steer allowed
 
     ret.gasMaxBP = [0.]  # m/s
-    ret.gasMaxV = [0.6] if ret.enableGasInterceptor else [0.] # max gas allowed
+    ret.gasMaxV = [0.6] if ret.enableGasInterceptor or ret.visionRadar else [0.] # max gas allowed
     ret.brakeMaxBP = [5., 20.]  # m/s
     ret.brakeMaxV = [1., 0.8]   # max brake allowed
 
