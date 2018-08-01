@@ -38,7 +38,7 @@ def create_long_command(packer, enabled, accel, idx):
   switch_value = -0.11
 
   #set the state flag. This has at least 4 values, depending on what's going on.
-  if not enabled or accel <= switch_value
+  if not enabled or accel <= switch_value:
     state_flag = 69 #69 in decimal
     gas_command = 0.208
   elif enabled or accel > switch_value:
