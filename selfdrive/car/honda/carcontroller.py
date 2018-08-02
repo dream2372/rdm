@@ -153,14 +153,12 @@ class CarController(object):
       # gas and brake
       apply_accel = actuators.gas - actuators.brake
       apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady, enabled)
-      print "apply_accel old is ", apply_accel
       apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
-      print "apply_accel new is ", apply_accel
     else:
       apply_gas = clip(actuators.gas, 0., 1.)
       apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX))
     apply_steer = int(clip(-actuators.steer * STEER_MAX, -STEER_MAX, STEER_MAX))
-    
+
     # any other cp.vl[0x18F]['STEER_STATUS'] is common and can happen during user override. sending 0 torque to avoid EPS sending error 5
     lkas_active = enabled and not CS.steer_not_allowed
 

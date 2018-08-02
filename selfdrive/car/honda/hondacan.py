@@ -28,20 +28,23 @@ def make_can_msg(addr, dat, idx, alt):
   return [addr, 0, dat, alt]
 
 def create_long_command(packer, enabled, accel, idx):
+  print accel
+
   #we control engine torque request/acceleration on bosch. initailize two variables as if we're disabled
   gas_command = 0.208
   state_flag = 69
-
   control_on = 5 if enabled else 0
 
   #this is variable. # TODO: RE this switching point for gas command and state flag based on gas_brake
-  flop_threshold = -0.11
+  switch_threshold = -0.11
 
   #set the state flag. This has at least 4 values, depending on what's going on.
-  if not enabled or accel <= flop_threshold:
+  if not enabled:
+    state_flag = 69 #69 in decimal
+  if enabled and accel <= switch_threshold:
     state_flag = 69 #69 in decimal
     gas_command = 0.208
-  elif enabled or accel > flop_threshold:
+  elif enabled or accel > switch_threshold:
     state_flag = 0
     gas_command = accel
 
