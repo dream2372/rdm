@@ -540,15 +540,23 @@ class CarInterface(object):
     # handle button presses
     for b in ret.buttonEvents:
 
-      # do enable on both accel and decel buttons
-      if b.type in ["accelCruise", "decelCruise"] and not b.pressed:
-        self.last_enable_pressed = cur_time
-        enable_pressed = True
-        #ret.cruiseState.enabled = enable_pressed
+      if b.type in ["altButton1"] and b.pressed:
+        if self.CS.longenabled == True:
+          self.CS.longenabled = False
+        else:
+          self.CS.longenabled = True
 
-      # do disable on button down
-      if b.type == "cancel" and b.pressed:
-        events.append(create_event('buttonCancel', [ET.USER_DISABLE]))
+      #allow lkas button to disable long control when enabled
+      if self.longenabled:
+        # do enable on both accel and decel buttons
+        if b.type in ["accelCruise", "decelCruise"] and not b.pressed:
+          self.last_enable_pressed = cur_time
+          enable_pressed = True
+          #ret.cruiseState.enabled = enable_pressed
+
+        # do disable on button down
+        if b.type == "cancel" and b.pressed:
+          events.append(create_event('buttonCancel', [ET.USER_DISABLE]))
 
     if self.CP.enableCruise:
       # KEEP THIS EVENT LAST! send enable event if button is pressed and there are

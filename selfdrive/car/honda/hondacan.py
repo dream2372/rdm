@@ -27,7 +27,7 @@ def make_can_msg(addr, dat, idx, alt):
     dat = fix(dat, addr)
   return [addr, 0, dat, alt]
 
-def create_long_command(packer, enabled, accel, idx):
+def create_long_command(packer, enabled, longenabled, accel, idx):
   print accel
 
   #we control engine torque request/acceleration on bosch. initailize two variables as if we're disabled
@@ -38,20 +38,21 @@ def create_long_command(packer, enabled, accel, idx):
   #this is variable. # TODO: RE this switching point for gas command and state flag based on gas_brake
   switch_threshold = -0.11
 
-  #set the state flag. This has at least 4 values, depending on what's going on.
-  if not enabled:
-    state_flag = 69 #69 in decimal
-  if enabled and accel <= switch_threshold:
-    state_flag = 69 #69 in decimal
+  if longenabled:
+    #set the state flag. This has at least 4 values, depending on what's going on.
+    if not enabled:
+      state_flag = 69 #69 in decimal
+    if enabled and accel <= switch_threshold:
+      state_flag = 69 #69 in decimal
+      gas_command = 0.208
+    elif enabled or accel > switch_threshold:
+      state_flag = 0
+      gas_command = accel
+  else:
+    #backup values if we need to hard disable to be able to drive
+    state_flag = 69
     gas_command = 0.208
-  elif enabled or accel > switch_threshold:
-    state_flag = 0
-    gas_command = accel
-
-  #backup values if we need to hard disable to be able to drive
-  state_flag = 69
-  gas_command = 0.208
-  accel = 0
+    accel = 0
 
   #we dont set set_to_1 on CIVIC_HATCH.
   values = {

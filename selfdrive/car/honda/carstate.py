@@ -192,6 +192,8 @@ class CarState(object):
     self.setspeed_prev = 255
 
     self.stopped = 0
+    #defaut to no long control for testing
+    self.longenabled = False
 
     # vEgo kalman filter
     dt = 0.01

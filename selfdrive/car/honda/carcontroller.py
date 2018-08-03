@@ -10,12 +10,13 @@ import zmq
 import selfdrive.messaging as messaging
 from selfdrive.services import service_list
 
-# Accel limits
+# Accel limits from toyota
 ACCEL_HYST_GAP = 0.02  # don't change accel command for small oscilalitons within this value
 ACCEL_MAX = 1.5  # 1.5 m/s2
 ACCEL_MIN = -3.0 # 3   m/s2
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
 
+#honda
 def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   # hyst params... TODO: move these to VehicleParams
   brake_hyst_on = 0.02     # to activate brakes exceed this value
@@ -41,6 +42,7 @@ def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
 
   return brake, braking, brake_steady
 
+#from toyota
 def accel_hysteresis(accel, accel_steady, enabled):
 
   # for small accel oscillations within ACCEL_HYST_GAP, don't change the accel command
@@ -152,10 +154,12 @@ class CarController(object):
       STEER_MAX = 0x1000
     #steer torque is converted back to CAN reference (positive when steering right)
     if CS.CP.visionRadar:
-      # gas and brake
+      # gas and brake. braking is negative
       apply_accel = actuators.gas - actuators.brake
       apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady, enabled)
-      apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
+      #apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
+      apply_accel = clip(apply_accel, ACCEL_MIN, ACCEL_MAX)
+
     else:
       apply_gas = clip(actuators.gas, 0., 1.)
       apply_brake = int(clip(self.brake_last * BRAKE_MAX, 0, BRAKE_MAX))
@@ -186,7 +190,7 @@ class CarController(object):
     if (frame % 2) == 0:
       idx = (frame / 2) % 4
       if CS.CP.visionRadar and CS.CP.carFingerprint == CAR.CIVIC_HATCH:
-        can_sends.append(hondacan.create_long_command(self.packer, enabled, apply_accel, idx))
+        can_sends.append(hondacan.create_long_command(self.packer, enabled, CS.longenabled, apply_accel, idx))
         can_sends.append(hondacan.create_acc_control_on(self.packer, enabled, idx))
         can_sends.append(hondacan.create_1fa(self.packer, idx))
       else:
