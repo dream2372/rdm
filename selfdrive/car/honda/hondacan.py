@@ -35,19 +35,40 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
   state_flag = 69
   control_on = 5 if enabled else 0
 
-  #this is variable. # TODO: RE this switching point for gas command and state flag based on gas_brake
-  switch_threshold = -0.11
+  ## TODO: VERIFY THESE
+  HI_ACCEL_THRESHOLD = 1.52
+  MID_ACCEL_THRESHOLD = 0.632
+  LO_ACCEL_THRESHOLD = -0.11
+
+  #THESE MAY BE UNNECESSARY
+  LO_BRAKE_THRESHOLD = 0
+  MID_BRAKE_THRESHOLD = 0
+  HI_BRAKE_THRESHOLD = 0
 
   if longenabled:
     #set the state flag. This has at least 4 values, depending on what's going on.
     if not enabled:
       state_flag = 69 #69 in decimal
-    if enabled and accel <= switch_threshold:
-      state_flag = 69 #69 in decimal
       gas_command = 0.208
-    elif enabled or accel > switch_threshold:
-      state_flag = 0
-      gas_command = accel
+      accel = 0
+    if enabled:
+      if accel <= LO_ACCEL_THRESHOLD:
+        state_flag = 69 #69 in decimal
+        gas_command = 0.208
+
+      #going to low accel
+      elif accel > LO_ACCEL_THRESHOLD:
+        state_flag = 0
+        gas_command = accel
+      #going to mid accel
+      elif accel > MID_ACCEL_THRESHOLD:
+        state_flag = 1
+        gas_command = accel - 0.506
+      #going to high accel
+      elif accel > HI_ACCEL_THRESHOLD:
+        state_flag = 2
+        gas_command = accel - (0.506 * 2)
+
   else:
     #backup values if we need to hard disable to be able to drive
     state_flag = 69
@@ -64,11 +85,9 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
   return packer.make_can_msg("ACC_CONTROL", 0, values, idx)
 
 def create_acc_control_on(packer, enabled, idx):
-  control_on = 5 if enabled else 0
-
   values = {
   "SET_TO_3": 0x03,
-  "CONTROL_ON": control_on,
+  "CONTROL_ON": enabled,
   "SET_TO_FF": 0xff,
   "SET_TO_75": 0x75,
   "SET_TO_30": 0x30,
@@ -115,49 +134,47 @@ def create_gas_command(packer, gas_amount, idx):
   return packer.make_can_msg("GAS_COMMAND", 0, values, idx)
 
 
-def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, idx):
+def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, visionradar, radaroffcan, idx):
   """Creates a CAN message for the Honda DBC STEERING_CONTROL."""
   values = {
     "STEER_TORQUE": apply_steer if lkas_active else 0,
     "STEER_TORQUE_REQUEST": lkas_active,
   }
   # Set bus 2 for accord and new crv.
-  bus = 2 if car_fingerprint in (CAR.CRV_5G, CAR.ACCORD, CAR.CIVIC_HATCH) else 0
-  if True:
-    bus = 0
+  bus = 2 if radaroffcan and not visionradar else 0
   return packer.make_can_msg("STEERING_CONTROL", bus, values, idx)
 
 
-def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, idx):
+def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, longenabled, visionradar, radaroffcan, idx):
   """Creates an iterable of CAN messages for the UIs."""
   commands = []
   bus = 0
 
   # Bosch sends commands to bus 2.
-  if car_fingerprint in (CAR.CRV_5G, CAR.ACCORD, CAR.CIVIC_HATCH):
+  if radaroffcan and not visionradar:
     bus = 2
-  if True:
-    if car_fingerprint in (CAR.CIVIC_HATCH):
-      bus = 0
+  else:
+    if radaroffcan:
       acc_hud_values = {
         'CRUISE_SPEED': hud.v_cruise,
         'ENABLE_MINI_CAR': hud.mini_car,
         'SET_TO_1': 0x01,
         'HUD_LEAD': hud.car,
         'HUD_DISTANCE': 0x02,
+        'ACC_ON': longenabled,
         'SET_TO_X3': 0x03,
       }
-  else:
-    acc_hud_values = {
-      'PCM_SPEED': pcm_speed * CV.MS_TO_KPH,
-      'PCM_GAS': hud.pcm_accel,
-      'CRUISE_SPEED': hud.v_cruise,
-      'ENABLE_MINI_CAR': hud.mini_car,
-      'HUD_LEAD': hud.car,
-      'SET_ME_X03': 0x03,
-      'SET_ME_X03_2': 0x03,
-      'SET_ME_X01': 0x01,
-    }
+    else:
+      acc_hud_values = {
+        'PCM_SPEED': pcm_speed * CV.MS_TO_KPH,
+        'PCM_GAS': hud.pcm_accel,
+        'CRUISE_SPEED': hud.v_cruise,
+        'ENABLE_MINI_CAR': hud.mini_car,
+        'HUD_LEAD': hud.car,
+        'SET_ME_X03': 0x03,
+        'SET_ME_X03_2': 0x03,
+        'SET_ME_X01': 0x01,
+      }
   commands.append(packer.make_can_msg('ACC_HUD', 0, acc_hud_values, idx))
 
   lkas_hud_values = {
