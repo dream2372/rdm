@@ -80,7 +80,7 @@ from selfdrive.loggerd.config import ROOT
 
 # comment out anything you don't want to run
 managed_processes = {
-  "thermald": "selfdrive.thermald",
+  #"thermald": "selfdrive.thermald",
   "uploader": "selfdrive.loggerd.uploader",
   "controlsd": "selfdrive.controls.controlsd",
   "radard": "selfdrive.controls.radard",
@@ -282,7 +282,7 @@ def manager_init(should_register=True):
 
 def system(cmd):
   try:
-    #cloudlog.info("running %s" % cmd)
+    cloudlog.info("running %s" % cmd)
     subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
   except subprocess.CalledProcessError as e:
     cloudlog.event("running failed",
