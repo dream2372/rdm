@@ -282,7 +282,7 @@ def manager_init(should_register=True):
 
 def system(cmd):
   try:
-    cloudlog.info("running %s" % cmd)
+    #cloudlog.info("running %s" % cmd)
     subprocess.check_output(cmd, stderr=subprocess.STDOUT, shell=True)
   except subprocess.CalledProcessError as e:
     cloudlog.event("running failed",
