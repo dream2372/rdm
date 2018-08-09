@@ -35,9 +35,9 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
   control_on = 5 if enabled else 0
 
   ## TODO: VERIFY THESE
-  HI_ACCEL_THRESHOLD = 1.52
-  MID_ACCEL_THRESHOLD = 0.632
-  LO_ACCEL_THRESHOLD = -0.11
+  HI_ACCEL_THRESHOLD = [1.52]
+  MID_ACCEL_THRESHOLD = [0.632]
+  LO_ACCEL_THRESHOLD = [-0.11]
 
   #THESE MAY BE UNNECESSARY
   LO_BRAKE_THRESHOLD = 0
@@ -50,23 +50,29 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
       state_flag = 69 #69 in decimal
       gas_command = 0.208
       accel = 0
+      print "disabled ",
     if enabled:
       #brake to coast-ish
       if accel <= LO_ACCEL_THRESHOLD:
         state_flag = 69 #69 in decimal
         gas_command = 0.208
+        print "idle/brake ",
       #going to low accel
       elif accel > LO_ACCEL_THRESHOLD:
         state_flag = 0
         gas_command = accel
+        print "low accel ",
       #going to mid accel
       elif accel > MID_ACCEL_THRESHOLD:
         state_flag = 1
+        #zero out when almost to 9 high bits. 9bit high would be 0.511
         gas_command = (accel - 0.506)
+        print "mid accel ",
       #going to high accel
       elif accel > HI_ACCEL_THRESHOLD:
         state_flag = 2
         gas_command = (accel - (0.506 * 2))
+        print "hi accel ",
 
   else:
     #backup values if we need to hard disable to be able to drive
@@ -74,7 +80,7 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
     gas_command = 0.208
     accel = 0
 
-  print "accel", accel, "gas_command", gas_command
+  print "accel ", accel, "gas_command ", gas_command
 
   #we dont set set_to_1 on CIVIC_HATCH.
   values = {

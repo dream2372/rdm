@@ -11,7 +11,7 @@ import selfdrive.messaging as messaging
 from selfdrive.services import service_list
 
 # Accel limits from toyota
-ACCEL_HYST_GAP = 0.02  # don't change accel command for small oscilalitons within this value
+ACCEL_HYST_GAP = 0.1  # was 0.02 # don't change accel command for small oscilalitons within this value
 ACCEL_MAX = 1.5  # 1.5 m/s2
 ACCEL_MIN = -3.0 # 3   m/s2
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
@@ -43,19 +43,19 @@ def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   return brake, braking, brake_steady
 
 #from toyota
-def accel_hysteresis(accel, accel_steady, enabled):
+def accel_hysteresis(accel, accel_prev, actuators.gas, actuators.brake, enabled):
 
   # for small accel oscillations within ACCEL_HYST_GAP, don't change the accel command
   if not enabled:
     # send 0 when disabled, otherwise acc faults
-    accel_steady = 0.
-  elif accel > accel_steady + ACCEL_HYST_GAP:
-    accel_steady = accel - ACCEL_HYST_GAP
-  elif accel < accel_steady - ACCEL_HYST_GAP:
-    accel_steady = accel + ACCEL_HYST_GAP
-  accel = accel_steady
+    accel_prev = 0.
+  elif accel > accel_prev + ACCEL_HYST_GAP:
+    accel_prev = accel - ACCEL_HYST_GAP
+  elif accel < accel_prev - ACCEL_HYST_GAP:
+    accel_prev = accel + ACCEL_HYST_GAP
+  accel = accel_prev
 
-  return accel, accel_steady
+  return accel, accel_prev
 
 def process_hud_alert(hud_alert):
   # initialize to no alert
@@ -84,7 +84,7 @@ class CarController(object):
     self.braking = False
     self.brake_steady = 0.
     self.brake_last = 0.
-    self.accel_steady = 0.
+    self.accel_prev = 0.
     self.enable_camera = enable_camera
     self.packer = CANPacker(dbc_name)
     self.new_radar_config = False
@@ -155,10 +155,8 @@ class CarController(object):
     #steer torque is converted back to CAN reference (positive when steering right)
     if CS.CP.visionRadar:
       # gas and brake. braking is negative
-      apply_accel = actuators.gas - actuators.brake
-      apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady, enabled)
-      #apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
-      apply_accel = clip(apply_accel, ACCEL_MIN, ACCEL_MAX)
+      apply_accel, self.accel_prev = accel_hysteresis(apply_accel, self.accel_prev, actuators.gas, actuators.brake, enabled)
+      apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
 
     else:
       apply_gas = clip(actuators.gas, 0., 1.)
