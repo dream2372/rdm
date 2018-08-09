@@ -155,6 +155,7 @@ class CarController(object):
     #steer torque is converted back to CAN reference (positive when steering right)
     if CS.CP.visionRadar:
       # gas and brake. braking is negative
+      apply_accel = actuators.gas - actuators.brake
       apply_accel, self.accel_prev = accel_hysteresis(apply_accel, self.accel_prev, enabled)
       apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
 

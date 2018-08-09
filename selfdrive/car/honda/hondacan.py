@@ -28,10 +28,6 @@ def make_can_msg(addr, dat, idx, alt):
   return [addr, 0, dat, alt]
 
 def create_long_command(packer, enabled, longenabled, accel, idx):
-
-  #we control engine torque request/acceleration on bosch. initailize two variables as if we're disabled
-  gas_command = 0.208
-  state_flag = 69
   control_on = 5 if enabled else 0
 
   ## TODO: VERIFY THESE
@@ -44,41 +40,34 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
   MID_BRAKE_THRESHOLD = 0
   HI_BRAKE_THRESHOLD = 0
 
-  if longenabled:
-    #set the state flag. This has at least 4 values, depending on what's going on.
-    if not enabled:
+  #set the state flag. This has at least 4 values, depending on what's going on.
+  if longenabled and enabled:
+    #brake to coast-ish
+    if accel <= LO_ACCEL_THRESHOLD:
       state_flag = 69 #69 in decimal
       gas_command = 0.208
-      accel = 0
-      print "disabled ",
-    if enabled:
-      #brake to coast-ish
-      if accel <= LO_ACCEL_THRESHOLD:
-        state_flag = 69 #69 in decimal
-        gas_command = 0.208
-        print "idle/brake ",
-      #going to low accel
-      elif accel > LO_ACCEL_THRESHOLD:
-        state_flag = 0
-        gas_command = accel
-        print "low accel ",
-      #going to mid accel
-      elif accel > MID_ACCEL_THRESHOLD:
-        state_flag = 1
-        #zero out when almost to 9 high bits. 9bit high would be 0.511
-        gas_command = (accel - 0.506)
-        print "mid accel ",
-      #going to high accel
-      elif accel > HI_ACCEL_THRESHOLD:
-        state_flag = 2
-        gas_command = (accel - (0.506 * 2))
-        print "hi accel ",
-
+      print "idle/brake ",
+    #going to low accel
+    elif accel > LO_ACCEL_THRESHOLD:
+      state_flag = 0
+      gas_command = accel
+      print "low accel ",
+    #going to mid accel
+    elif accel > MID_ACCEL_THRESHOLD:
+      state_flag = 1
+      #zero out when almost to 9 high bits. 9bit high would be 0.511
+      gas_command = (accel - 0.506)
+      print "mid accel ",
+    #going to high accel
+    elif accel > HI_ACCEL_THRESHOLD:
+      state_flag = 2
+      gas_command = (accel - (0.506 * 2))
+      print "hi accel ",
   else:
-    #backup values if we need to hard disable to be able to drive
-    state_flag = 69
+    state_flag = 69 #69 in decimal
     gas_command = 0.208
     accel = 0
+    print "disabled ",
 
   print "accel ", accel, "gas_command ", gas_command
 
