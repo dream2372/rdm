@@ -43,7 +43,7 @@ def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   return brake, braking, brake_steady
 
 #from toyota
-def accel_hysteresis(accel, accel_prev, actuators_gas, actuators_brake, enabled):
+def accel_hysteresis(accel, accel_prev, enabled):
 
   # for small accel oscillations within ACCEL_HYST_GAP, don't change the accel command
   if not enabled:
@@ -155,7 +155,7 @@ class CarController(object):
     #steer torque is converted back to CAN reference (positive when steering right)
     if CS.CP.visionRadar:
       # gas and brake. braking is negative
-      apply_accel, self.accel_prev = accel_hysteresis(apply_accel, self.accel_prev, actuators.gas, actuators.brake, enabled)
+      apply_accel, self.accel_prev = accel_hysteresis(apply_accel, self.accel_prev, enabled)
       apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
 
     else:
