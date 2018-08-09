@@ -28,7 +28,6 @@ def make_can_msg(addr, dat, idx, alt):
   return [addr, 0, dat, alt]
 
 def create_long_command(packer, enabled, longenabled, accel, idx):
-  print accel
 
   #we control engine torque request/acceleration on bosch. initailize two variables as if we're disabled
   gas_command = 0.208
@@ -52,10 +51,10 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
       gas_command = 0.208
       accel = 0
     if enabled:
+      #brake to coast-ish
       if accel <= LO_ACCEL_THRESHOLD:
         state_flag = 69 #69 in decimal
         gas_command = 0.208
-
       #going to low accel
       elif accel > LO_ACCEL_THRESHOLD:
         state_flag = 0
@@ -63,17 +62,19 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
       #going to mid accel
       elif accel > MID_ACCEL_THRESHOLD:
         state_flag = 1
-        gas_command = accel - 0.506
+        gas_command = (accel - 0.506)
       #going to high accel
       elif accel > HI_ACCEL_THRESHOLD:
         state_flag = 2
-        gas_command = accel - (0.506 * 2)
+        gas_command = (accel - (0.506 * 2))
 
   else:
     #backup values if we need to hard disable to be able to drive
     state_flag = 69
     gas_command = 0.208
     accel = 0
+
+  print "accel", print accel, print "gas_command", print gas_command
 
   #we dont set set_to_1 on CIVIC_HATCH.
   values = {

@@ -354,7 +354,12 @@ class CarInterface(object):
     ret.steerMaxV = [1.]   # max steer allowed
 
     ret.gasMaxBP = [0.]  # m/s
-    ret.gasMaxV = [0.6] if ret.enableGasInterceptor or ret.visionRadar else [0.] # max gas allowed
+    if ret.enableGasInterceptor:
+      ret.gasMaxV = [0.6]
+    elif ret.visionRadar:
+      ret.gasMaxV = [0.5]
+    else:
+      ret.gasMaxV = [0]
     ret.brakeMaxBP = [5., 20.]  # m/s
     ret.brakeMaxV = [1., 0.8]   # max brake allowed
 
@@ -537,7 +542,6 @@ class CarInterface(object):
 
     cur_time = sec_since_boot()
     enable_pressed = False
-    print self.CS.longenabled
     # handle button presses
     for b in ret.buttonEvents:
 
