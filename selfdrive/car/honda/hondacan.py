@@ -74,7 +74,7 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
     gas_command = 0.208
     accel = 0
 
-  print "accel", print accel, print "gas_command", print gas_command
+  print "accel", accel, "gas_command", gas_command
 
   #we dont set set_to_1 on CIVIC_HATCH.
   values = {
