@@ -43,7 +43,7 @@ def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   return brake, braking, brake_steady
 
 #from toyota
-def accel_hysteresis(accel, accel_prev, actuators.gas, actuators.brake, enabled):
+def accel_hysteresis(accel, accel_prev, actuators_gas, actuators_brake, enabled):
 
   # for small accel oscillations within ACCEL_HYST_GAP, don't change the accel command
   if not enabled:
