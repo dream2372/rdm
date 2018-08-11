@@ -42,34 +42,34 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
 
   #set the state flag. This has at least 4 values, depending on what's going on.
   if longenabled and enabled:
+    #brake to coast-ish
+    if (accel <= LO_ACCEL_THRESHOLD):
+      state_flag = 69 #69 in decimal
+      gas_command = 0.208
+      print "idle/brake ",
     #going to low accel
-    if (accel < 0.632 and accel >= -0.11):
+    elif (accel > LO_ACCEL_THRESHOLD):
       state_flag = 0
       gas_command = accel
       print "low accel ",
     #going to mid accel
-    elif (accel > 0.632 and accel < 1.52):
+    elif (accel > MID_ACCEL_THRESHOLD):
       state_flag = 1
       #zero out when almost to 9 high bits (max for gas_command). 9bits high would be 0.511
       gas_command = (accel - 0.506)
       print "mid accel ",
     #going to high accel
-    elif (accel >= 1.52):
+    elif (accel > HI_ACCEL_THRESHOLD):
       state_flag = 2
       gas_command = (accel - (0.506 * 2))
       print "hi accel ",
-    #brake to coast-ish
-    else:
-      state_flag = 69 #69 in decimal
-      gas_command = 0.208
-      print "idle/brake ",
   else:
     state_flag = 69 #69 in decimal
     gas_command = 0.208
     accel = 0
     print "disabled ",
 
-  print "accel ", accel, "gas_command ", gas_command, "state_flag", state_flag
+  print "accel ", accel, "gas_command ", gas_command
 
   #we dont set set_to_1 on CIVIC_HATCH.
   values = {
