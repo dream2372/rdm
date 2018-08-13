@@ -66,7 +66,6 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
   else:
     state_flag = 69 #69 in decimal
     gas_command = 0.208
-    accel = 0
     print "disabled ",
 
   print "accel ", accel, "gas_command ", gas_command, "state_flag", state_flag
@@ -184,14 +183,20 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, longenabled, vis
 
   if car_fingerprint in (CAR.CIVIC, CAR.ODYSSEY):
     commands.append(packer.make_can_msg('HIGHBEAM_CONTROL', 0, {'HIGHBEAMS_ON': False}, idx))
-
+  if not visionradar:
     radar_hud_values = {
       'ACC_ALERTS': hud.acc_alert,
       'LEAD_SPEED': 0x1fe,  # What are these magic values
       'LEAD_STATE': 0x7,
       'LEAD_DISTANCE': 0x1e,
     }
-    commands.append(packer.make_can_msg('RADAR_HUD', 0, radar_hud_values, idx))
+
+  elif visionradar:
+    radar_hud_values = {
+    'SET_TO_1' : 0x01,
+    }
+
+  commands.append(packer.make_can_msg('RADAR_HUD', 0, radar_hud_values, idx))
 
   # if True:
   #   commands.append(packer.make_can_msg('HIGHBEAM_CONTROL', 0, {'HIGHBEAMS_ON': False}, idx))
