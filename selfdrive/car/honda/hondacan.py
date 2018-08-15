@@ -71,6 +71,7 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
   else:
     state_flag = 69 #69 in decimal
     gas_command = 0.208
+    accel = 0
     print "disabled ",
 
   print "accel ", accel, "gas_command ", gas_command, "state_flag", state_flag
