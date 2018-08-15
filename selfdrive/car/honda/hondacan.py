@@ -42,8 +42,13 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
 
   #set the state flag. This has at least 4 values, depending on what's going on.
   if longenabled and enabled:
+    #going to idle/coast
+    if (accel <= 0 and accel >= -0.11):
+      state_flag = 0
+      gas_command = 0.208
+      print "idle/coast ",
     #going to low accel
-    if (accel < 0.632 and accel >= -0.11):
+    if (accel < 0.632 and accel > 0):
       state_flag = 0
       gas_command = accel
       print "low accel ",
@@ -58,11 +63,11 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
       state_flag = 2
       gas_command = (accel - (0.506 * 2))
       print "hi accel ",
-    #brake to coast-ish
+    #going to brake
     else:
       state_flag = 69 #69 in decimal
       gas_command = 0.208
-      print "idle/brake ",
+      print "brake ",
   else:
     state_flag = 69 #69 in decimal
     gas_command = 0.208
