@@ -357,7 +357,7 @@ class CarInterface(object):
     if ret.enableGasInterceptor:
       ret.gasMaxV = [0.6]
     elif ret.visionRadar:
-      ret.gasMaxV = [0.5]
+      ret.gasMaxV = [0.6]
     else:
       ret.gasMaxV = [0]
     ret.brakeMaxBP = [5., 20.]  # m/s
