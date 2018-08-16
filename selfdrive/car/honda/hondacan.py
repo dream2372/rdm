@@ -68,11 +68,16 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
       gas_command = (accel - (0.506 * 2))
       print "hi accel ",
     #going to brake
-    else:
+    elif (accel < -0.11):
       state_flag = 69 #69 in decimal
       braking_flag = 1
       gas_command = 0.208
       print "brake ",
+    else:
+      state_flag = 69 #69 in decimal
+      braking_flag = 0
+      gas_command = 0.208
+      print "why? ",
   else:
     state_flag = 69 #69 in decimal
     braking_flag = 0
