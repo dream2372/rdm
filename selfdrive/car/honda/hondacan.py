@@ -45,31 +45,37 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
     #going to idle/coast
     if (accel <= 0 and accel >= -0.11):
       state_flag = 0
+      braking_flag = 0
       gas_command = 0.208
       print "idle/coast ",
     #going to low accel
     if (accel < 0.632 and accel > 0):
       state_flag = 0
+      braking_flag = 0
       gas_command = accel
       print "low accel ",
     #going to mid accel
     elif (accel > 0.632 and accel < 1.52):
       state_flag = 1
+      braking_flag = 0
       #zero out when almost to 9 high bits (max for gas_command). 9bits high would be 0.511
       gas_command = (accel - 0.506)
       print "mid accel ",
     #going to high accel
     elif (accel >= 1.52):
       state_flag = 2
+      braking_flag = 0
       gas_command = (accel - (0.506 * 2))
       print "hi accel ",
     #going to brake
     else:
       state_flag = 69 #69 in decimal
+      braking_flag = 1
       gas_command = 0.208
       print "brake ",
   else:
     state_flag = 69 #69 in decimal
+    braking_flag = 0
     gas_command = 0.208
     accel = 0
     print "disabled ",
@@ -80,6 +86,7 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
   values = {
     "GAS_COMMAND": gas_command,
     "STATE_FLAG": state_flag,
+    "BRAKING_FLAG": braking_flag,
     "CONTROL_ON": control_on,
     "GAS_BRAKE": accel,
   }
