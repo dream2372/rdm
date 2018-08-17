@@ -91,7 +91,8 @@ def create_long_command(packer, enabled, longenabled, accel, idx):
   values = {
     "GAS_COMMAND": gas_command,
     "STATE_FLAG": state_flag,
-    "BRAKING_FLAG": braking_flag,
+    "BRAKING_1": braking_flag,
+    "BRAKING_2": braking_flag,
     "CONTROL_ON": control_on,
     "GAS_BRAKE": accel,
   }
