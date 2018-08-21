@@ -2,7 +2,7 @@ import struct
 
 import common.numpy_fast as np
 from selfdrive.config import Conversions as CV
-from selfdrive.car.honda.values import CAR
+from selfdrive.car.honda.values import CAR, HONDA_BOSCH
 
 # *** Honda specific ***
 def can_cksum(mm):
@@ -155,7 +155,7 @@ def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, v
     "STEER_TORQUE_REQUEST": lkas_active,
   }
   # Set bus 2 for accord and new crv.
-  bus = 2 if radaroffcan and not visionradar else 0
+  bus = 2 if car_fingerprint in HONDA_BOSCH and not visionradar else 0
   return packer.make_can_msg("STEERING_CONTROL", bus, values, idx)
 
 
@@ -165,10 +165,10 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, longenabled, vis
   bus = 0
 
   # Bosch sends commands to bus 2.
-  if radaroffcan and not visionradar:
+  if car_fingerprint in HONDA_BOSCH and not visionradar:
     bus = 2
   else:
-    if radaroffcan:
+    if car_fingerprint in HONDA_BOSCH:
       acc_hud_values = {
         'CRUISE_SPEED': hud.v_cruise,
         'ENABLE_MINI_CAR': hud.mini_car,
