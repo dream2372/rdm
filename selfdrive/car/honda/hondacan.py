@@ -53,6 +53,63 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
   return packer.make_can_msg("BRAKE_COMMAND", bus, values, idx)
 
 
+def create_gas_command(packer, gas_amount, idx):
+  enable = gas_amount > 0.001
+
+  values = {"ENABLE": enable}
+
+  if enable:
+    values["GAS_COMMAND"] = gas_amount * 255.
+    values["GAS_COMMAND2"] = gas_amount * 255.
+
+  return packer.make_can_msg("GAS_COMMAND", 0, values, idx)
+
+def create_acc_commands(packer, enabled, accel, idx):
+  bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
+
+  commands = []
+
+  # 0 = off
+  # 5 = on
+  control_on = 5 if enabled else 0
+  # 0  = gas
+  # 17 = no gas
+  # 31 = ?!?!
+  state_flag = 0 if enabled and accel > 0 else 17
+  # 0 to +2000? = range
+  # 720 = no gas
+  # (scale from a max of 800 to 2000)
+  gas_command = int(accel * 2.5) if enabled and accel > 0 else 720
+  # 1 = brake
+  # 0 = no brake
+  braking_flag = 1 if enabled and accel < 0 else 0
+  # -1599 to +800? = range
+  # 0 = no accel
+  gas_brake = int(accel) if enabled else 0
+
+  acc_control_values = {
+    "GAS_COMMAND": gas_command,
+    "STATE_FLAG": state_flag,
+    "BRAKING_1": braking_flag,
+    "BRAKING_2": braking_flag,
+    # setting CONTROL_ON causes car to set POWERTRAIN_DATA->ACC_STATUS = 1
+    "CONTROL_ON": control_on,
+    "GAS_BRAKE": gas_brake,
+    "SET_TO_1": 0x01,
+  }
+  commands.append(packer.make_can_msg("ACC_CONTROL", bus_pt, acc_control_values, idx))
+
+  acc_control_on_values = {
+    "SET_TO_3": 0x03,
+    "CONTROL_ON": enabled,
+    "SET_TO_FF": 0xff,
+    "SET_TO_75": 0x75,
+    "SET_TO_30": 0x30,
+  }
+  commands.append(packer.make_can_msg("ACC_CONTROL_ON", bus_pt, acc_control_on_values, idx))
+
+  return commands
+
 def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, idx, is_panda_black):
   values = {
     "STEER_TORQUE": apply_steer if lkas_active else 0,
@@ -62,12 +119,23 @@ def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, i
   return packer.make_can_msg("STEERING_CONTROL", bus, values, idx)
 
 
-def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, is_panda_black):
+def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longitudinal_control, is_metric, idx, is_panda_black):
   commands = []
   bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
   bus_lkas = get_lkas_cmd_bus(car_fingerprint, is_panda_black)
 
-  if car_fingerprint not in HONDA_BOSCH:
+  if car_fingerprint in HONDA_BOSCH:
+    acc_hud_values = {
+      'CRUISE_SPEED': hud.v_cruise,
+      'ENABLE_MINI_CAR': hud.mini_car,
+      'SET_TO_1': 0x01,
+      'HUD_LEAD': hud.car,
+      'HUD_DISTANCE': 0x02,
+      'ACC_ON': hud.car != 0,
+      'SET_TO_X3': 0x03,
+    }
+
+  else:
     acc_hud_values = {
       'PCM_SPEED': pcm_speed * CV.MS_TO_KPH,
       'PCM_GAS': hud.pcm_accel,
@@ -97,9 +165,30 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, 
       'LEAD_STATE': 0x7,
       'LEAD_DISTANCE': 0x1e,
     }
+  elif car_fingerprint in HONDA_BOSCH:
+    radar_hud_values = {
+      'SET_TO_1' : 0x01,
+    }
     commands.append(packer.make_can_msg('RADAR_HUD', bus_pt, radar_hud_values, idx))
+
   return commands
 
+from common.numpy_fast import clip
+def create_radar_commands(v_ego, idx):
+  commands = []
+  v_ego_kph = clip(int(round(v_ego * CV.MS_TO_KPH)), 0, 255)
+  speed = struct.pack('!B', v_ego_kph)
+
+  msg_0x300 = ("\xf9" + speed + "\x8a\xd0" +
+              ("\x20" if idx == 0 or idx == 3 else "\x00") +
+              "\x00\x00")
+  commands.append(make_can_msg(0x300, msg_0x300, idx, 1))
+
+  # car_fingerprint == CAR.PILOT:
+  msg_0x301 = "\x00\x00\x56\x02\x58\x00\x00"
+  commands.append(make_can_msg(0x301, msg_0x301, idx, 1))
+
+  return commands
 
 def spam_buttons_command(packer, button_val, idx, car_fingerprint, is_panda_black):
   values = {
