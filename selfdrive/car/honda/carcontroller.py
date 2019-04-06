@@ -201,6 +201,7 @@ class CarController(object):
 
         if CS.CP.carFingerprint in HONDA_BOSCH:
           can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, idx))
+          can_sends.append(hondacan.create_1fa(self.packer, idx))
         else:
           pump_on, self.last_pump_ts = brake_pump_hysteresys(apply_brake, self.apply_brake_last, self.last_pump_ts)
           can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
