@@ -165,7 +165,25 @@ class CarInterface(object):
     ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
     ret.lateralTuning.pid.kf = 0.00006 # conservative feed-forward
 
-    if candidate in [CAR.CIVIC, CAR.CIVIC_BOSCH]:
+    if candidate in [CAR.CIVIC]:
+      stop_and_go = True
+      ret.mass = mass_civic
+      ret.wheelbase = wheelbase_civic
+      ret.centerToFront = centerToFront_civic
+      ret.steerRatio = 14.63  # 10.93 is end-to-end spec
+      tire_stiffness_factor = 1.
+      # Civic at comma has modified steering FW, so different tuning for the Neo in that car
+      is_fw_modified = os.getenv("DONGLE_ID") in ['99c94dc769b5d96e']
+      ret.steerKpV, ret.steerKiV = [[0.4], [0.12]] if is_fw_modified else [[0.8], [0.24]]
+      if is_fw_modified:
+        tire_stiffness_factor = 0.9
+        ret.steerKf = 0.00004
+      ret.longitudinalKpBP = [0., 5., 35.]
+      ret.longitudinalKpV = [3.6, 2.4, 1.5]
+      ret.longitudinalKiBP = [0., 35.]
+      ret.longitudinalKiV = [0.54, 0.36]
+
+    elif candidate in [CAR.CIVIC_BOSCH]:
       stop_and_go = True
       ret.mass = CivicParams.MASS
       ret.wheelbase = CivicParams.WHEELBASE

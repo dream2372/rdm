@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+ewe#!/usr/bin/env python
 import os
 import time
 from cereal import car
@@ -37,9 +37,9 @@ class RadarInterface(object):
   def update(self, can_strings):
     # in Bosch radar and we are only steering for now, so sleep 0.05s to keep
     # radard at 20Hz and return no points
-    if self.radar_off_can:
-      time.sleep(0.05)
-      return car.RadarData.new_message()
+    #if self.radar_off_can:
+    time.sleep(0.05)
+    return car.RadarData.new_message()
 
     tm = int(sec_since_boot() * 1e9)
     vls = self.rcp.update_strings(tm, can_strings)

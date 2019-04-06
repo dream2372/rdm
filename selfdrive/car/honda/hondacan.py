@@ -64,7 +64,7 @@ def create_gas_command(packer, gas_amount, idx):
 
   return packer.make_can_msg("GAS_COMMAND", 0, values, idx)
 
-def create_acc_commands(packer, enabled, accel, idx):
+def create_acc_commands(packer, enabled, accel, fingerprint, idx):
   bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
 
   commands = []
@@ -79,10 +79,10 @@ def create_acc_commands(packer, enabled, accel, idx):
   # 0 to +2000? = range
   # 720 = no gas
   # (scale from a max of 800 to 2000)
-  gas_command = int(accel * 2.5) if enabled and accel > 0 else 720
+  gas_command = int(accel) if enabled and accel > 0 else 720
   # 1 = brake
   # 0 = no brake
-  braking_flag = 1 if enabled and accel < 0 else 0
+  braking_flag = 1 if enabled and accel < -200 else 0
   # -1599 to +800? = range
   # 0 = no accel
   gas_brake = int(accel) if enabled else 0
@@ -90,8 +90,8 @@ def create_acc_commands(packer, enabled, accel, idx):
   acc_control_values = {
     "GAS_COMMAND": gas_command,
     "STATE_FLAG": state_flag,
-    "BRAKING_1": braking_flag,
-    "BRAKING_2": braking_flag,
+    "BRAKE_LIGHTS": braking_flag,
+    "BRAKE_PUMP_REQUEST": braking_flag,
     # setting CONTROL_ON causes car to set POWERTRAIN_DATA->ACC_STATUS = 1
     "CONTROL_ON": control_on,
     "GAS_BRAKE": gas_brake,
@@ -108,9 +108,15 @@ def create_acc_commands(packer, enabled, accel, idx):
   }
   commands.append(packer.make_can_msg("ACC_CONTROL_ON", bus_pt, acc_control_on_values, idx))
 
+  #Civic Bosch needs a blank 0x1fa for POWERTRAIN_DATA>ACC_STATUS to be set to 1
+  if fingerprint == CAR.CIVIC_BOSCH:
+    blank_values = {}
+    commands.append(packer.make_can_msg("BLANK_1FA", bus_pt, blank_values, idx))
+
   return commands
 
-def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, idx, is_panda_black):
+
+def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, radar_off_can, idx, is_panda_black):
   values = {
     "STEER_TORQUE": apply_steer if lkas_active else 0,
     "STEER_TORQUE_REQUEST": lkas_active,
@@ -128,7 +134,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
     acc_hud_values = {
       'CRUISE_SPEED': hud.v_cruise,
       'ENABLE_MINI_CAR': hud.mini_car,
-      'SET_TO_1': 0x01,
+      #'SET_TO_1': 0x01,
       'HUD_LEAD': hud.car,
       'HUD_DISTANCE': 0x02,
       'ACC_ON': hud.car != 0,
@@ -167,7 +173,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
     }
   elif car_fingerprint in HONDA_BOSCH:
     radar_hud_values = {
-      'SET_TO_1' : 0x01,
+      #'SET_TO_1' : 0x01,
     }
     commands.append(packer.make_can_msg('RADAR_HUD', bus_pt, radar_hud_values, idx))
 

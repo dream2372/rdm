@@ -9,7 +9,7 @@ from selfdrive.can.packer import CANPacker
 
 # Accel limits
 ACCEL_HYST_GAP = 0.02 # don't change accel command for small oscilalitons within this value
-ACCEL_MAX = 800.
+ACCEL_MAX = 1600.
 ACCEL_MIN = -1599.
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
 
@@ -172,7 +172,7 @@ class CarController(object):
     # Send dashboard UI commands.
     if (frame % 10) == 0:
       idx = (frame/10) % 4
-      can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.CP.openpilotLongitudinalControl, idx, CS.CP.isPandaBlack))
+      can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.CP.openpilotLongitudinalControl, CS.is_metric, idx, CS.CP.isPandaBlack))
 
     if not CS.CP.openpilotLongitudinalControl:
       # If using stock ACC, spam cancel command to kill gas when OP disengages.
@@ -192,7 +192,7 @@ class CarController(object):
         self.apply_brake_last = apply_brake
 
         if CS.CP.carFingerprint in HONDA_BOSCH:
-          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, idx))
+          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, CS.CP.carFingerprint, idx))
         else:
           pump_on, self.last_pump_ts = brake_pump_hysteresys(apply_brake, self.apply_brake_last, self.last_pump_ts)
           can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
@@ -205,7 +205,7 @@ class CarController(object):
 
       # TODO: this only applies to people adding a nidec radar to vehicles that didn't come with one
       # so this cannot be upstreamed and needs to be refactored out better somehow
-      if (frame % 5) == 0:
-        idx = (frame / 5) % 4
-        can_sends.extend(hondacan.create_radar_commands(CS.v_ego, idx))
+      # if (frame % 5) == 0:
+      #   idx = (frame / 5) % 4
+      #   can_sends.extend(hondacan.create_radar_commands(CS.v_ego, idx))
     return can_sends

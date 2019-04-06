@@ -123,8 +123,8 @@ BO_ 479 ACC_CONTROL: 8 EON
  SG_ STATE_FLAG : 7|5@0+ (1,0) [0|0] "" XXX
  SG_ GAS_COMMAND : 2|11@0+ (1,0) [0|0] "" PCM
  SG_ GAS_BRAKE : 31|13@0- (1,0) [0|0] "" XXX
- SG_ BRAKING_1 : 62|1@0+ (1,0) [0|1] "" XXX
- SG_ BRAKING_2 : 34|1@0+ (1,0) [0|1] "" XXX
+ SG_ BRAKE_LIGHTS : 62|1@0+ (1,0) [0|1] "" XXX
+ SG_ BRAKE_PUMP_REQUEST : 34|1@0+ (1,0) [0|1] "" XXX
  SG_ ZEROS_BOH : 33|18@0+ (1,0) [100|100] "" XXX
  SG_ COUNTER : 61|2@0+ (1,0) [0|3] "" XXX
  SG_ CHECKSUM : 59|4@0+ (1,0) [0|15] "" XXX
