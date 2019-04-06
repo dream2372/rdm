@@ -213,8 +213,8 @@ class CarController(object):
 
       # TODO: this only applies to people adding a nidec radar to vehicles that didn't come with one
       # so this cannot be upstreamed and needs to be refactored out better somehow
-      if (frame % 5) == 0:
-        idx = (frame / 5) % 4
-        can_sends.extend(hondacan.create_radar_commands(CS.v_ego, idx))
+      # if (frame % 5) == 0:
+      #   idx = (frame / 5) % 4
+      #   can_sends.extend(hondacan.create_radar_commands(CS.v_ego, idx))
 
     sendcan.send(can_list_to_can_capnp(can_sends, msgtype='sendcan').to_bytes())

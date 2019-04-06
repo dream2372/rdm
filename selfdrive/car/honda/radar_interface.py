@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+ewe#!/usr/bin/env python
 import os
 import zmq
 import time
@@ -47,9 +47,11 @@ class RadarInterface(object):
 
     # in Bosch radar and we are only steering for now, so sleep 0.05s to keep
     # radard at 20Hz and return no points
-    if self.radar_off_can:
-      time.sleep(0.05)
-      return ret
+
+    #for vision, we need to return here like with stock acc
+    #if self.radar_off_can:
+    time.sleep(0.05)
+    return ret
 
     while 1:
       tm = int(sec_since_boot() * 1e9)
