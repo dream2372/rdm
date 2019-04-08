@@ -103,14 +103,10 @@ def create_acc_commands(packer, enabled, accel, fingerprint, idx):
 
   #Civic Bosch needs a blank 0x1fa for POWERTRAIN_DATA>ACC_STATUS to be set to 1
   if fingerprint == CAR.CIVIC_BOSCH:
-    commands.append(packer.make_can_msg("BLANK_1FA", 0, values, idx))
+    blank_values = {}
+    commands.append(packer.make_can_msg("BLANK_1FA", 0, blank_values, idx))
 
   return commands
-
-#create blank 0x1fa on CIVIC_HATCH with no bosch radar
-def create_1fa(packer, idx):
-  values = {}
-  return packer.make_can_msg("BLANK_1FA", 0, values, idx)
 
 def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, radar_off_can, idx):
   values = {
