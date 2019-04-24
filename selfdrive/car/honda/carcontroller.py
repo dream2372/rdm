@@ -106,7 +106,7 @@ class CarController(object):
     self.enable_camera = enable_camera
     self.packer = CANPacker(dbc_name)
     self.radarVin_idx = 0
-    
+
   def update(self, sendcan, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
              hud_v_cruise, hud_show_lanes, hud_show_car, \
@@ -180,7 +180,7 @@ class CarController(object):
 
     #if using radar, we need to send the VIN
     if CS.useTeslaRadar and (frame % 100 == 0):
-      can_sends.append(hondacan.create_radar_VIN_msg(self.radarVin_idx,CS.radarVIN,2,0x1d6,CS.useTeslaRadar))
+      can_sends.append(hondacan.create_radar_VIN_msg(self.radarVin_idx,CS.radarVIN,2,0x17c,CS.useTeslaRadar))
       self.radarVin_idx += 1
       self.radarVin_idx = self.radarVin_idx  % 3
 
