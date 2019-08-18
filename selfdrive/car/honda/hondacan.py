@@ -64,7 +64,7 @@ def create_gas_command(packer, gas_amount, idx):
 
   return packer.make_can_msg("GAS_COMMAND", 0, values, idx)
 
-def create_acc_commands(packer, enabled, accel, car_fingerprint, idx):
+def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_black):
   bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
 
   commands = []
