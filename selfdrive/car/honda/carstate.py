@@ -340,6 +340,9 @@ class CarState(object):
         else:
           self.brake_switch = cp.vl["BRAKE_MODULE"]['BRAKE_PRESSED']
           self.brake_pressed = cp.vl["BRAKE_MODULE"]['BRAKE_PRESSED']
+        # On set, cruise set speed pulses between 254~255 and the set speed prev is set to avoid this.
+        self.v_cruise_pcm = self.v_cruise_pcm_prev if cp.vl["ACC_HUD"]['CRUISE_SPEED'] > 160.0 else cp.vl["ACC_HUD"]['CRUISE_SPEED']
+        self.v_cruise_pcm_prev = self.v_cruise_pcm
       else:
         self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']
         self.cruise_speed_offset = calc_cruise_offset(cp.vl["CRUISE_PARAMS"]['CRUISE_SPEED_OFFSET'], self.v_ego)
