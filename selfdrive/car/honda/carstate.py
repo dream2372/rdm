@@ -99,11 +99,21 @@ def get_can_signals(CP):
                 ("CRUISE_SPEED", "ACC_HUD", 0)]
     checks += [("GAS_PEDAL_2", 100)]
 
-    # TODO: why were these removed from bosch?
     signals += [("BRAKE_ERROR_1", "STANDSTILL", 1),
                 ("BRAKE_ERROR_2", "STANDSTILL", 1)]
     checks += [("STANDSTILL", 50)]
+  elif CP.openpilotLongitudinalControl:
+    if CP.carFingerprint not in (CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CRV_HYBRID):
+      signals += [("BRAKE_PRESSED", "BRAKE_MODULE", 0)]
+      checks += [("BRAKE_MODULE", 50)]
+    signals += [("CAR_GAS", "GAS_PEDAL_2", 0),
+                ("MAIN_ON", "SCM_FEEDBACK", 0),
+                ("EPB_STATE", "EPB_STATUS", 0),
+    checks += [("GAS_PEDAL_2", 100)]
 
+    signals += [("BRAKE_ERROR_1", "STANDSTILL", 1),
+                ("BRAKE_ERROR_2", "STANDSTILL", 1)]
+    checks += [("STANDSTILL", 50)]
   else:
     # Nidec signals.
     signals += [("BRAKE_ERROR_1", "STANDSTILL", 1),
@@ -330,16 +340,29 @@ class CarState(object):
       self.v_cruise_pcm = self.v_cruise_pcm_prev if cp.vl["ACC_HUD"]['CRUISE_SPEED'] > 160.0 else cp.vl["ACC_HUD"]['CRUISE_SPEED']
       self.v_cruise_pcm_prev = self.v_cruise_pcm
     else:
-      self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']
-      self.cruise_speed_offset = calc_cruise_offset(cp.vl["CRUISE_PARAMS"]['CRUISE_SPEED_OFFSET'], self.v_ego)
-      self.v_cruise_pcm = cp.vl["CRUISE"]['CRUISE_SPEED_PCM']
-      # brake switch has shown some single time step noise, so only considered when
-      # switch is on for at least 2 consecutive CAN samples
-      self.brake_pressed = cp.vl["POWERTRAIN_DATA"]['BRAKE_PRESSED'] or \
-                         (self.brake_switch and self.brake_switch_prev and \
-                         cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH'] != self.brake_switch_ts)
-      self.brake_switch_prev = self.brake_switch
-      self.brake_switch_ts = cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH']
+      if self.CP.carFingerprint in HONDA_BOSCH:
+        self.cruise_speed_offset = calc_cruise_offset(0, self.v_ego)
+        if self.CP.carFingerprint in (CAR.CIVIC_BOSCH, CAR.ACCORDH, CAR.CRV_HYBRID):
+          self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']
+          self.brake_pressed = cp.vl["POWERTRAIN_DATA"]['BRAKE_PRESSED'] or \
+                            (self.brake_switch and self.brake_switch_prev and \
+                            cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH'] != self.brake_switch_ts)
+          self.brake_switch_prev = self.brake_switch
+          self.brake_switch_ts = cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH']
+        else:
+          self.brake_switch = cp.vl["BRAKE_MODULE"]['BRAKE_PRESSED']
+          self.brake_pressed = cp.vl["BRAKE_MODULE"]['BRAKE_PRESSED']
+      else:
+        self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']
+        self.cruise_speed_offset = calc_cruise_offset(cp.vl["CRUISE_PARAMS"]['CRUISE_SPEED_OFFSET'], self.v_ego)
+        self.v_cruise_pcm = cp.vl["CRUISE"]['CRUISE_SPEED_PCM']
+        # brake switch has shown some single time step noise, so only considered when
+        # switch is on for at least 2 consecutive CAN samples
+        self.brake_pressed = cp.vl["POWERTRAIN_DATA"]['BRAKE_PRESSED'] or \
+                           (self.brake_switch and self.brake_switch_prev and \
+                           cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH'] != self.brake_switch_ts)
+        self.brake_switch_prev = self.brake_switch
+        self.brake_switch_ts = cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH']
 
     self.user_brake = cp.vl["VSA_STATUS"]['USER_BRAKE']
     self.pcm_acc_status = cp.vl["POWERTRAIN_DATA"]['ACC_STATUS']
