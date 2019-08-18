@@ -87,7 +87,7 @@ def get_can_signals(CP):
       ("GEARBOX", 100),
     ]
 
-  if CP.radarOffCan:
+  if CP.radarOffCan or CP.carFingerprint in HONDA_BOSCH and CP.openpilotLongitudinalControl:
     # Civic is only bosch to use the same brake message as other hondas.
     if CP.carFingerprint not in (CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CRV_HYBRID):
       signals += [("BRAKE_PRESSED", "BRAKE_MODULE", 0)]
@@ -97,18 +97,6 @@ def get_can_signals(CP):
                 ("CRUISE_CONTROL_LABEL", "ACC_HUD", 0),
                 ("EPB_STATE", "EPB_STATUS", 0),
                 ("CRUISE_SPEED", "ACC_HUD", 0)]
-    checks += [("GAS_PEDAL_2", 100)]
-
-    signals += [("BRAKE_ERROR_1", "STANDSTILL", 1),
-                ("BRAKE_ERROR_2", "STANDSTILL", 1)]
-    checks += [("STANDSTILL", 50)]
-  elif CP.openpilotLongitudinalControl:
-    if CP.carFingerprint not in (CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CRV_HYBRID):
-      signals += [("BRAKE_PRESSED", "BRAKE_MODULE", 0)]
-      checks += [("BRAKE_MODULE", 50)]
-    signals += [("CAR_GAS", "GAS_PEDAL_2", 0),
-                ("MAIN_ON", "SCM_FEEDBACK", 0),
-                ("EPB_STATE", "EPB_STATUS", 0)]
     checks += [("GAS_PEDAL_2", 100)]
 
     signals += [("BRAKE_ERROR_1", "STANDSTILL", 1),
