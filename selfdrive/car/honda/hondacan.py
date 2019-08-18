@@ -64,7 +64,7 @@ def create_gas_command(packer, gas_amount, idx):
 
   return packer.make_can_msg("GAS_COMMAND", 0, values, idx)
 
-def create_acc_commands(packer, enabled, accel, fingerprint, idx):
+def create_acc_commands(packer, enabled, accel, car_fingerprint, idx):
   bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
 
   commands = []
@@ -109,7 +109,7 @@ def create_acc_commands(packer, enabled, accel, fingerprint, idx):
   commands.append(packer.make_can_msg("ACC_CONTROL_ON", bus_pt, acc_control_on_values, idx))
 
   #Civic Bosch needs a blank 0x1fa for POWERTRAIN_DATA>ACC_STATUS to be set to 1
-  if fingerprint == CAR.CIVIC_BOSCH:
+  if car_fingerprint == CAR.CIVIC_BOSCH:
     blank_values = {}
     commands.append(packer.make_can_msg("BLANK_1FA", bus_pt, blank_values, idx))
 
