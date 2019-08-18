@@ -142,7 +142,6 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
       'ACC_ON': hud.car != 0,
       'SET_TO_X3': 0x03,
     }
-
   else:
     acc_hud_values = {
       'PCM_SPEED': pcm_speed * CV.MS_TO_KPH,
@@ -155,7 +154,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
       'SET_ME_X01_2': 1,
       'SET_ME_X01': 1,
     }
-    commands.append(packer.make_can_msg("ACC_HUD", bus_pt, acc_hud_values, idx))
+  commands.append(packer.make_can_msg("ACC_HUD", bus_pt, acc_hud_values, idx))
 
   lkas_hud_values = {
     'SET_ME_X41': 0x41,
