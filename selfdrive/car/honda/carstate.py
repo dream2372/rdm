@@ -310,7 +310,7 @@ class CarState(object):
 
     self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']
 
-    if self.CP.radarOffCan:
+    if self.CP.radarOffCan or self.CP.carFingerprint in HONDA_BOSCH and self.CP.openpilotLongitudinalControl:
       self.cruise_mode = cp.vl["ACC_HUD"]['CRUISE_CONTROL_LABEL']
       self.stopped = cp.vl["ACC_HUD"]['CRUISE_SPEED'] == 252.
       self.cruise_speed_offset = calc_cruise_offset(0, self.v_ego)
@@ -328,22 +328,6 @@ class CarState(object):
       self.v_cruise_pcm = self.v_cruise_pcm_prev if cp.vl["ACC_HUD"]['CRUISE_SPEED'] > 160.0 else cp.vl["ACC_HUD"]['CRUISE_SPEED']
       self.v_cruise_pcm_prev = self.v_cruise_pcm
     else:
-      if self.CP.carFingerprint in HONDA_BOSCH:
-        self.cruise_speed_offset = calc_cruise_offset(0, self.v_ego)
-        if self.CP.carFingerprint in (CAR.CIVIC_BOSCH, CAR.ACCORDH, CAR.CRV_HYBRID):
-          self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']
-          self.brake_pressed = cp.vl["POWERTRAIN_DATA"]['BRAKE_PRESSED'] or \
-                            (self.brake_switch and self.brake_switch_prev and \
-                            cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH'] != self.brake_switch_ts)
-          self.brake_switch_prev = self.brake_switch
-          self.brake_switch_ts = cp.ts["POWERTRAIN_DATA"]['BRAKE_SWITCH']
-        else:
-          self.brake_switch = cp.vl["BRAKE_MODULE"]['BRAKE_PRESSED']
-          self.brake_pressed = cp.vl["BRAKE_MODULE"]['BRAKE_PRESSED']
-        # On set, cruise set speed pulses between 254~255 and the set speed prev is set to avoid this.
-        self.v_cruise_pcm = self.v_cruise_pcm_prev if cp.vl["ACC_HUD"]['CRUISE_SPEED'] > 160.0 else cp.vl["ACC_HUD"]['CRUISE_SPEED']
-        self.v_cruise_pcm_prev = self.v_cruise_pcm
-      else:
         self.brake_switch = cp.vl["POWERTRAIN_DATA"]['BRAKE_SWITCH']
         self.cruise_speed_offset = calc_cruise_offset(cp.vl["CRUISE_PARAMS"]['CRUISE_SPEED_OFFSET'], self.v_ego)
         self.v_cruise_pcm = cp.vl["CRUISE"]['CRUISE_SPEED_PCM']
