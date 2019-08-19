@@ -96,12 +96,12 @@ def get_can_signals(CP):
                 ("MAIN_ON", "SCM_FEEDBACK", 0),
                 ("CRUISE_CONTROL_LABEL", "ACC_HUD", 0),
                 ("EPB_STATE", "EPB_STATUS", 0),
-                ("CRUISE_SPEED", "ACC_HUD", 0)]
-    checks += [("GAS_PEDAL_2", 100)]
-
-    signals += [("BRAKE_ERROR_1", "STANDSTILL", 1),
+                ("CRUISE_SPEED", "ACC_HUD", 0)
+                ("BRAKE_ERROR_1", "STANDSTILL", 1),
                 ("BRAKE_ERROR_2", "STANDSTILL", 1)]
-    checks += [("STANDSTILL", 50)]
+    checks += [("GAS_PEDAL_2", 100),
+               ("STANDSTILL", 50)]
+
   else:
     # Nidec signals.
     signals += [("BRAKE_ERROR_1", "STANDSTILL", 1),
