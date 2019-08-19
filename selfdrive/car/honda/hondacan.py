@@ -130,7 +130,8 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
   commands = []
   bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
   bus_lkas = get_lkas_cmd_bus(car_fingerprint, is_panda_black)
-  bus_lkas = 0
+  if car_fingerprint in HONDA_BOSCH and openpilot_longitudinal_control:
+    bus_lkas = 0
 
   if car_fingerprint in HONDA_BOSCH:
     acc_hud_values = {
