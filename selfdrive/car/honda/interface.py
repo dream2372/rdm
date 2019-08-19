@@ -9,7 +9,7 @@ from selfdrive.config import Conversions as CV
 from selfdrive.controls.lib.drive_helpers import create_event, EventTypes as ET, get_events
 from selfdrive.controls.lib.vehicle_model import VehicleModel
 from selfdrive.car.honda.carstate import CarState, get_can_parser, get_cam_can_parser
-from selfdrive.car.honda.values import CruiseButtons, CAR, HONDA_BOSCH, VISUAL_HUD, CAMERA_MSGS, BOSCH_CAMERA_MSGS
+from selfdrive.car.honda.values import CruiseButtons, CAR, HONDA_BOSCH, VISUAL_HUD, CAMERA_MSGS, BOSCH_CAMERA_MSGS, BOSCH_RADAR_MSGS
 from selfdrive.car import STD_CARGO_KG, CivicParams, scale_rot_inertia, scale_tire_stiffness
 from selfdrive.controls.lib.planner import _A_CRUISE_MAX_V_FOLLOWING
 
@@ -140,9 +140,9 @@ class CarInterface(object):
     if candidate in HONDA_BOSCH:
       ret.safetyModel = car.CarParams.SafetyModel.hondaBosch
       ret.enableCamera = True
-      ret.radarOffCan = any(x for x in BOSCH_CAMERA_MSGS if x in fingerprint)
+      ret.radarOffCan = any(x for x in BOSCH_RADAR_MSGS if x in fingerprint)
       ret.openpilotLongitudinalControl = not ret.radarOffCan
-      ret.enableCruise = ret.radarOffCan or ret.openpilotLongitudinalControl
+      ret.enableCruise = ret.openpilotLongitudinalControl
     else:
       ret.safetyModel = car.CarParams.SafetyModel.honda
       ret.enableCamera = not any(x for x in CAMERA_MSGS if x in fingerprint) or is_panda_black
@@ -153,7 +153,8 @@ class CarInterface(object):
     cloudlog.warn("ECU Camera Simulated: %r", ret.enableCamera)
     cloudlog.warn("ECU Gas Interceptor: %r", ret.enableGasInterceptor)
 
-    ret.enableCruise = not ret.enableGasInterceptor
+    # # TODO: do this better
+    #ret.enableCruise = not ret.enableGasInterceptor
 
     # Optimized car params: tire_stiffness_factor and steerRatio are a result of a vehicle
     # model optimization process. Certain Hondas have an extra steering sensor at the bottom
@@ -363,7 +364,7 @@ class CarInterface(object):
 
     ret.gasMaxBP = [0.]  # m/s
     # TODO: what is the correct way to handle this?
-    ret.gasMaxV = [1.] #if ret.enableGasInterceptor else [0.] # max gas allowed
+    ret.gasMaxV = [1.] if ret.enableGasInterceptor or ret.openpilotLongitudinalControl else [0.] # max gas allowed
     ret.brakeMaxBP = [5., 20.]  # m/s
     ret.brakeMaxV = [1., 0.8]   # max brake allowed
 
