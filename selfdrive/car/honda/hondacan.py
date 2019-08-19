@@ -130,6 +130,33 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
   commands = []
   bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
   bus_lkas = get_lkas_cmd_bus(car_fingerprint, is_panda_black)
+  if car_fingerprint in HONDA_BOSCH and openpilot_longitudinal_control:
+    bus_lkas = 0
+
+  if car_fingerprint in HONDA_BOSCH:
+    acc_hud_values = {
+      'CRUISE_SPEED': hud.v_cruise * CV.KPH_TO_MPH,
+      'ENABLE_MINI_CAR': hud.mini_car,
+      #'SET_TO_1': 0x01,
+      'HUD_LEAD': hud.car,
+      'HUD_DISTANCE': 0x02,
+      'ACC_ON': hud.car != 0,
+      #'SET_TO_X3': 0x03,
+      'IMPERIAL_UNIT': int(not is_metric),
+    }
+  else:
+    acc_hud_values = {
+      'PCM_SPEED': pcm_speed * CV.MS_TO_KPH,
+      'PCM_GAS': hud.pcm_accel,
+      'CRUISE_SPEED': hud.v_cruise,
+      'ENABLE_MINI_CAR': hud.mini_car,
+      'HUD_LEAD': hud.car,
+      'HUD_DISTANCE': 3,    # max distance setting on display
+      'IMPERIAL_UNIT': int(not is_metric),
+      'SET_ME_X01_2': 1,
+      'SET_ME_X01': 1,
+    }
+  commands.append(packer.make_can_msg("ACC_HUD", bus_pt, acc_hud_values, idx))
 
   lkas_hud_values = {
     'SET_ME_X41': 0x41,
