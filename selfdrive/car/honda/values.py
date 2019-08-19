@@ -179,7 +179,9 @@ SPEED_FACTOR = {
 # msgs sent for steering controller by camera module on can 0.
 # those messages are mutually exclusive on CRV and non-CRV cars
 CAMERA_MSGS = [0xe4, 0x194]
+# msgs sent from bosch modules. the radar sends almost all adas frames
 BOSCH_CAMERA_MSGS = [0x35e]
+BOSCH_RADAR_MSGS = [0xe4, 0x1df, 0x1ef, 0x30c, 0x39f]
 
 # TODO: get these from dbc file
 HONDA_BOSCH = [CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH, CAR.CIVIC_BOSCH, CAR.CRV_5G, CAR.CRV_HYBRID]
