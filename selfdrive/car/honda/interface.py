@@ -142,7 +142,7 @@ class CarInterface(object):
       ret.enableCamera = True
       ret.radarOffCan = any(x for x in BOSCH_CAMERA_MSGS if x in fingerprint)
       ret.openpilotLongitudinalControl = not ret.radarOffCan
-      ret.enableCruise = ret.radarOffCan
+      ret.enableCruise = ret.radarOffCan or ret.openpilotLongitudinalControl
     else:
       ret.safetyModel = car.CarParams.SafetyModel.honda
       ret.enableCamera = not any(x for x in CAMERA_MSGS if x in fingerprint) or is_panda_black
