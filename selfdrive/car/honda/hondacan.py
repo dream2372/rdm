@@ -134,13 +134,14 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
 
   if car_fingerprint in HONDA_BOSCH:
     acc_hud_values = {
-      'CRUISE_SPEED': hud.v_cruise,
+      'CRUISE_SPEED': hud.v_cruise * CV.KPH_TO_MPH,
       'ENABLE_MINI_CAR': hud.mini_car,
       #'SET_TO_1': 0x01,
       'HUD_LEAD': hud.car,
       'HUD_DISTANCE': 0x02,
       'ACC_ON': hud.car != 0,
       #'SET_TO_X3': 0x03,
+      'IMPERIAL_UNIT': int(not is_metric),
     }
   else:
     acc_hud_values = {
