@@ -174,7 +174,9 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
     }
   elif car_fingerprint in HONDA_BOSCH:
     radar_hud_values = {
-      'SET_TO_1' : 0x01,
+      # # TODO: refactor
+      # civic has this value set to 0
+      #'SET_TO_1' : 0x01,
     }
     commands.append(packer.make_can_msg('RADAR_HUD', bus_pt, radar_hud_values, idx))
 
