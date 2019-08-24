@@ -70,6 +70,10 @@ def create_gas_command(packer, gas_amount, idx):
 
   return packer.make_can_msg("GAS_COMMAND", 0, values, idx)
 
+def create_legacy_brake_command():
+  values = {"CHIME": 0}
+  return packer.make_can_msg("LEGACY_BRAKE_COMMAND", bus, values, idx)
+
 def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_black):
   bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
 
@@ -113,6 +117,10 @@ def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_b
     "SET_TO_30": 0x30,
   }
   commands.append(packer.make_can_msg("ACC_CONTROL_ON", bus_pt, acc_control_on_values, idx))
+
+  if car_fingerprint in (CAR.CIVIC_BOSCH):
+    values = {"CHIME": 0}
+    commands.append(packer.make_can_msg("LEGACY_BRAKE_COMMAND", bus_pt, values, idx))
 
   return commands
 

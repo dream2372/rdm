@@ -168,12 +168,12 @@ class CarController(object):
     # Send steering command.
     idx = frame % 4
     can_sends.append(hondacan.create_steering_control(self.packer, apply_steer,
-      lkas_active, CS.CP.carFingerprint, CS.CP.radarOffCan, idx, CS.CP.isPandaBlack))
+     lkas_active, CS.CP.carFingerprint, CS.CP.radarOffCan, idx, CS.CP.isPandaBlack))
 
     # Send dashboard UI commands.
     if (frame % 10) == 0:
       idx = (frame/10) % 4
-      can_sends.append(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.CP.openpilotLongitudinalControl, CS.is_metric, idx, CS.CP.isPandaBlack))
+      can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.CP.openpilotLongitudinalControl, CS.is_metric, idx, CS.CP.isPandaBlack))
 
     if not CS.CP.openpilotLongitudinalControl:
       # If using stock ACC, spam cancel command to kill gas when OP disengages.
@@ -186,13 +186,13 @@ class CarController(object):
       # Send gas, brake, and acc commands.
       if (frame % 2) == 0:
         if CS.CP.carFingerprint in HONDA_BOSCH:
-          can_sends.append(hondacan.create_acc_commands(self.packer, enabled, apply_accel, CS.CP.carFingerprint, idx, CS.CP.isPandaBlack))
-        if CS.CP.carFingerprint not in HONDA_BOSCH or CS.CP.carFingerprint in (CAR.CIVIC_BOSCH):
+          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, CS.CP.carFingerprint, idx, CS.CP.isPandaBlack))
+        else:
           idx = frame // 2
           ts = frame * DT_CTRL
           pump_on, self.last_pump_ts = brake_pump_hysteresis(apply_brake, self.apply_brake_last, self.last_pump_ts, ts)
           can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
-            pcm_override, pcm_cancel_cmd, hud.fcw, idx, CS.CP.carFingerprint, CS.CP.isPandaBlack))
+           pcm_override, pcm_cancel_cmd, hud.fcw, idx, CS.CP.carFingerprint, CS.CP.isPandaBlack))
           self.apply_brake_last = apply_brake
 
         if CS.CP.enableGasInterceptor:
@@ -205,4 +205,5 @@ class CarController(object):
       # if (frame % 5) == 0:
       #   idx = (frame / 5) % 4
       #   can_sends.extend(hondacan.create_radar_commands(CS.v_ego, idx))
+
     return can_sends
