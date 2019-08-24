@@ -183,16 +183,17 @@ class CarController(object):
         can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, idx, CS.CP.carFingerprint, CS.CP.isPandaBlack))
 
     else:
-      # Send gas and brake commands.
+      # Send gas, brake, and acc commands.
       if (frame % 2) == 0:
         if CS.CP.carFingerprint in HONDA_BOSCH:
           can_sends.append(hondacan.create_acc_commands(self.packer, enabled, apply_accel, CS.CP.carFingerprint, idx, CS.CP.isPandaBlack))
-        idx = frame // 2
-        ts = frame * DT_CTRL
-        pump_on, self.last_pump_ts = brake_pump_hysteresis(apply_brake, self.apply_brake_last, self.last_pump_ts, ts)
-        can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
-          pcm_override, pcm_cancel_cmd, hud.fcw, idx, CS.CP.carFingerprint, CS.CP.isPandaBlack))
-        self.apply_brake_last = apply_brake
+        if CS.CP.carFingerprint not in HONDA_BOSCH or CS.CP.carFingerprint in (CAR.CIVIC_BOSCH):
+          idx = frame // 2
+          ts = frame * DT_CTRL
+          pump_on, self.last_pump_ts = brake_pump_hysteresis(apply_brake, self.apply_brake_last, self.last_pump_ts, ts)
+          can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
+            pcm_override, pcm_cancel_cmd, hud.fcw, idx, CS.CP.carFingerprint, CS.CP.isPandaBlack))
+          self.apply_brake_last = apply_brake
 
         if CS.CP.enableGasInterceptor:
           # send exactly zero if apply_gas is zero. Interceptor will send the max between read value and apply_gas.

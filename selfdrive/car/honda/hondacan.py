@@ -32,8 +32,9 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
   brakelights = apply_brake > 0
   brake_rq = apply_brake > 0
   pcm_fault_cmd = False
+  bus = get_pt_bus(car_fingerprint, is_panda_black)
 
-  if car_fingerprint not in HONDA_BOSCH:
+  if car_fingerprint not in (CAR.CIVIC_BOSCH):
     values = {
       "COMPUTER_BRAKE": apply_brake,
       "BRAKE_PUMP_REQUEST": pump_on,
@@ -50,12 +51,11 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
       "AEB_REQ_2": 0,
       "AEB": 0,
     }
+    return packer.make_can_msg("BRAKE_COMMAND", bus, values, idx)
+
   else:
-    values = {
-    "CHIME": 0
-    }
-  bus = get_pt_bus(car_fingerprint, is_panda_black)
-  return packer.make_can_msg("BRAKE_COMMAND", bus, values, idx)
+    values = {"CHIME": 0}
+    return packer.make_can_msg("LEGACY_BRAKE_COMMAND", bus, values, idx)
 
 
 def create_gas_command(packer, gas_amount, idx):
