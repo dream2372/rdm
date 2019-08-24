@@ -33,22 +33,27 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
   brake_rq = apply_brake > 0
   pcm_fault_cmd = False
 
-  values = {
-    "COMPUTER_BRAKE": apply_brake,
-    "BRAKE_PUMP_REQUEST": pump_on,
-    "CRUISE_OVERRIDE": pcm_override,
-    "CRUISE_FAULT_CMD": pcm_fault_cmd,
-    "CRUISE_CANCEL_CMD": pcm_cancel_cmd,
-    "COMPUTER_BRAKE_REQUEST": brake_rq,
-    "SET_ME_1": 1,
-    "BRAKE_LIGHTS": brakelights,
-    "CHIME": 0,
-    # TODO: Why are there two bits for fcw? According to dbc file the first bit should also work
-    "FCW": fcw << 1,
-    "AEB_REQ_1": 0,
-    "AEB_REQ_2": 0,
-    "AEB": 0,
-  }
+  if car_fingerprint not in HONDA_BOSCH:
+    values = {
+      "COMPUTER_BRAKE": apply_brake,
+      "BRAKE_PUMP_REQUEST": pump_on,
+      "CRUISE_OVERRIDE": pcm_override,
+      "CRUISE_FAULT_CMD": pcm_fault_cmd,
+      "CRUISE_CANCEL_CMD": pcm_cancel_cmd,
+      "COMPUTER_BRAKE_REQUEST": brake_rq,
+      "SET_ME_1": 1,
+      "BRAKE_LIGHTS": brakelights,
+      "CHIME": 0,
+      # TODO: Why are there two bits for fcw? According to dbc file the first bit should also work
+      "FCW": fcw << 1,
+      "AEB_REQ_1": 0,
+      "AEB_REQ_2": 0,
+      "AEB": 0,
+    }
+  else:
+    values = {
+    "CHIME": 0
+    }
   bus = get_pt_bus(car_fingerprint, is_panda_black)
   return packer.make_can_msg("BRAKE_COMMAND", bus, values, idx)
 
@@ -121,18 +126,18 @@ def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, r
     "STEER_TORQUE": apply_steer if lkas_active else 0,
     "STEER_TORQUE_REQUEST": lkas_active,
   }
-  bus = get_lkas_cmd_bus(car_fingerprint, is_panda_black)
-  bus = 0
+  if radar_off_can:
+    bus = get_lkas_cmd_bus(car_fingerprint, is_panda_black)
+  else:
+    bus = get_pt_bus(car_fingerprint, is_panda_black)
+
   return packer.make_can_msg("STEERING_CONTROL", bus, values, idx)
 
 
 def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longitudinal_control, is_metric, idx, is_panda_black):
   commands = []
   bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
-  bus_lkas = get_lkas_cmd_bus(car_fingerprint, is_panda_black)
-
-  if car_fingerprint in HONDA_BOSCH and openpilot_longitudinal_control:
-    bus_lkas = 0
+  bus_lkas = get_lkas_cmd_bus(car_fingerprint, is_panda_black) if not openpilot_longitudinal_control and car_fingerprint in HONDA_BOSCH else get_pt_bus(car_fingerprint, is_panda_black)
 
   lkas_hud_values = {
     'SET_ME_X41': 0x41,
@@ -144,7 +149,6 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
   commands.append(packer.make_can_msg('LKAS_HUD', bus_lkas, lkas_hud_values, idx))
 
   if openpilot_longitudinal_control:
-
     if car_fingerprint in HONDA_BOSCH:
       # # TODO: refactor
       bus_lkas = 0
@@ -171,8 +175,6 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
         'SET_ME_X01': 1,
       }
     commands.append(packer.make_can_msg("ACC_HUD", bus_pt, acc_hud_values, idx))
-
-
 
     if car_fingerprint in (CAR.CIVIC, CAR.ODYSSEY):
       radar_hud_values = {
