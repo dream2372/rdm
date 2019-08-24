@@ -53,6 +53,7 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
     }
     return packer.make_can_msg("BRAKE_COMMAND", bus, values, idx)
 
+  # Civic Bosch needs a blank 0x1fa for POWERTRAIN_DATA>ACC_STATUS to be set to 1
   else:
     values = {"CHIME": 0}
     return packer.make_can_msg("LEGACY_BRAKE_COMMAND", bus, values, idx)
@@ -112,11 +113,6 @@ def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_b
     "SET_TO_30": 0x30,
   }
   commands.append(packer.make_can_msg("ACC_CONTROL_ON", bus_pt, acc_control_on_values, idx))
-
-  #Civic Bosch needs a blank 0x1fa for POWERTRAIN_DATA>ACC_STATUS to be set to 1
-  if car_fingerprint == CAR.CIVIC_BOSCH:
-    blank_values = {}
-    commands.append(packer.make_can_msg("BLANK_1FA", bus_pt, blank_values, idx))
 
   return commands
 
