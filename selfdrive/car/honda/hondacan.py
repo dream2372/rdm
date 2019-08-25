@@ -86,14 +86,14 @@ def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_b
   # 0 to +2000? = range
   # 720 = no gas
   # (scale from a max of 800 to 2000)
-  gas_command = (accel / 0.003) if enabled and accel > 0 else 720
+  gas_command = (accel * 333.33) if enabled and accel > 0 else 720
   # 1 = brake
   # 0 = no brake
-  braking_flag = 1 if enabled and accel < 0.6 else 0
+  braking_flag = 1 if enabled and (accel < -0.5) else 0
   # -1599 to +800? = range
   # 0 = no accel
   acceleration = accel if enabled else 0
-
+  print accel
   acc_control_values = {
     "FORWARD_TORQUE_CMD": gas_command,
     "STATE_FLAG": state_flag,
