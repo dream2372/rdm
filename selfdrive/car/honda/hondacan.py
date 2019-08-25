@@ -70,9 +70,6 @@ def create_gas_command(packer, gas_amount, idx):
 
   return packer.make_can_msg("GAS_COMMAND", 0, values, idx)
 
-def create_legacy_brake_command():
-  values = {"CHIME": 0}
-  return packer.make_can_msg("LEGACY_BRAKE_COMMAND", bus, values, idx)
 
 def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_black):
   bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
@@ -89,22 +86,22 @@ def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_b
   # 0 to +2000? = range
   # 720 = no gas
   # (scale from a max of 800 to 2000)
-  gas_command = int(accel) if enabled and accel > 0 else 720
+  gas_command = (accel / 0.003) if enabled and accel > 0 else 720
   # 1 = brake
   # 0 = no brake
-  braking_flag = 1 if enabled and accel < -200 else 0
+  braking_flag = 1 if enabled and accel < 0.6 else 0
   # -1599 to +800? = range
   # 0 = no accel
-  gas_brake = int(accel) if enabled else 0
+  acceleration = accel if enabled else 0
 
   acc_control_values = {
-    "GAS_COMMAND": gas_command,
+    "FORWARD_TORQUE_CMD": gas_command,
     "STATE_FLAG": state_flag,
     "BRAKE_LIGHTS": braking_flag,
     "BRAKE_PUMP_REQUEST": braking_flag,
     # setting CONTROL_ON causes car to set POWERTRAIN_DATA->ACC_STATUS = 1
     "CONTROL_ON": control_on,
-    "GAS_BRAKE": gas_brake,
+    "ACCEL_CMD": acceleration,
     "SET_TO_1": 0x01,
   }
   commands.append(packer.make_can_msg("ACC_CONTROL", bus_pt, acc_control_values, idx))

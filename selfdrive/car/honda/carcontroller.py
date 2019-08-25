@@ -9,8 +9,9 @@ from selfdrive.can.packer import CANPacker
 
 # Accel limits
 ACCEL_HYST_GAP = 0.02 # don't change accel command for small oscilalitons within this value
-ACCEL_MAX = 1600.
-ACCEL_MIN = -1599.
+ACCEL_MAX = 1.5
+ACCEL_MIN = -3.0
+ACCEL_STOPPED = -4.8
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
 
 def accel_hysteresis(accel, accel_steady, enabled):
