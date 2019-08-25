@@ -13,6 +13,7 @@ ACCEL_MAX = 1.5
 ACCEL_MIN = -3.0
 ACCEL_STOPPED = -4.8
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
+ACCEL_SCALE_STOPPED = max(ACCEL_MAX, -ACCEL_STOPPED)
 
 def accel_hysteresis(accel, accel_steady, enabled):
 
@@ -157,7 +158,7 @@ class CarController(object):
     if CS.v_ego_raw > 2.3:
       apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
     else:
-      apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_STOPPED, ACCEL_MAX)
+      apply_accel = clip(apply_accel * ACCEL_SCALE_STOPPED, ACCEL_STOPPED, ACCEL_MAX)
 
     # steer torque is converted back to CAN reference (positive when steering right)
     apply_gas = clip(actuators.gas, 0., 1.)

@@ -79,30 +79,34 @@ def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_b
   # 0 = off
   # 5 = on
   control_on = 5 if enabled else 0
+
   # 0  = gas
   # 17 = no gas
   # 31 = ?!?!
   state_flag = 0 if enabled and accel > 0 else 17
+
   # 0 to +2000? = range
   # 720 = no gas
   # (scale from a max of 800 to 2000)
-  gas_command = (accel * 333.33) if enabled and accel > 0 else 720
+  torque_request = (accel * 333.33) if enabled and accel > 0 else 720
+
   # 1 = brake
   # 0 = no brake
-  braking_flag = 1 if enabled and (accel < -0.5) else 0
-  # -1599 to +800? = range
+  braking_flag = 1 if enabled and (accel < -0.2) else 0
+
+  # -1599 to +1600? = range
   # 0 = no accel
   acceleration = accel if enabled else 0
-  print accel
+
   acc_control_values = {
-    "FORWARD_TORQUE_CMD": gas_command,
+    "FORWARD_TORQUE_CMD": torque_request,
     "STATE_FLAG": state_flag,
     "BRAKE_LIGHTS": braking_flag,
     "BRAKE_PUMP_REQUEST": braking_flag,
     # setting CONTROL_ON causes car to set POWERTRAIN_DATA->ACC_STATUS = 1
     "CONTROL_ON": control_on,
     "ACCEL_CMD": acceleration,
-    "SET_TO_1": 0x01,
+    "SET_TO_1": 0x01 if car_fingerprint not in (CAR.CIVIC_BOSCH) else 0,  # not set on civic. is this set for brake system type? starts set to 16 on car power up. drops after 1-2 seconds
   }
   commands.append(packer.make_can_msg("ACC_CONTROL", bus_pt, acc_control_values, idx))
 
@@ -116,8 +120,8 @@ def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_b
   commands.append(packer.make_can_msg("ACC_CONTROL_ON", bus_pt, acc_control_on_values, idx))
 
   if car_fingerprint in (CAR.CIVIC_BOSCH):
-    values = {"CHIME": 0}
-    commands.append(packer.make_can_msg("LEGACY_BRAKE_COMMAND", bus_pt, values, idx))
+    legacy_values = {"CHIME": 0}
+    commands.append(packer.make_can_msg("LEGACY_BRAKE_COMMAND", bus_pt, legacy_values, idx))
 
   return commands
 
