@@ -35,29 +35,23 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
   pcm_fault_cmd = False
   bus = get_pt_bus(car_fingerprint, is_panda_black)
 
-  if car_fingerprint not in (CAR.CIVIC_BOSCH):
-    values = {
-      "COMPUTER_BRAKE": apply_brake,
-      "BRAKE_PUMP_REQUEST": pump_on,
-      "CRUISE_OVERRIDE": pcm_override,
-      "CRUISE_FAULT_CMD": pcm_fault_cmd,
-      "CRUISE_CANCEL_CMD": pcm_cancel_cmd,
-      "COMPUTER_BRAKE_REQUEST": brake_rq,
-      "SET_ME_1": 1,
-      "BRAKE_LIGHTS": brakelights,
-      "CHIME": 0,
-      # TODO: Why are there two bits for fcw? According to dbc file the first bit should also work
-      "FCW": fcw << 1,
-      "AEB_REQ_1": 0,
-      "AEB_REQ_2": 0,
-      "AEB": 0,
-    }
-    return packer.make_can_msg("BRAKE_COMMAND", bus, values, idx)
-
-  # Civic Bosch needs a blank 0x1fa for POWERTRAIN_DATA>ACC_STATUS to be set to 1
-  else:
-    values = {"CHIME": 0}
-    return packer.make_can_msg("LEGACY_BRAKE_COMMAND", bus, values, idx)
+  values = {
+    "COMPUTER_BRAKE": apply_brake,
+    "BRAKE_PUMP_REQUEST": pump_on,
+    "CRUISE_OVERRIDE": pcm_override,
+    "CRUISE_FAULT_CMD": pcm_fault_cmd,
+    "CRUISE_CANCEL_CMD": pcm_cancel_cmd,
+    "COMPUTER_BRAKE_REQUEST": brake_rq,
+    "SET_ME_1": 1,
+    "BRAKE_LIGHTS": brakelights,
+    "CHIME": 0,
+    # TODO: Why are there two bits for fcw? According to dbc file the first bit should also work
+    "FCW": fcw << 1,
+    "AEB_REQ_1": 0,
+    "AEB_REQ_2": 0,
+    "AEB": 0,
+  }
+  return packer.make_can_msg("BRAKE_COMMAND", bus, values, idx)
 
 
 def create_gas_command(packer, gas_amount, idx):
