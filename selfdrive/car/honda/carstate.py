@@ -207,6 +207,8 @@ class CarState(object):
     self.radarEpasType = 0
     #read config file
     read_config_file(self)
+    print "tesla is "
+    print self.useTeslaRadar
     ### END OF MAIN CONFIG OPTIONS ###
 
     # vEgo kalman filter

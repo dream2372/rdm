@@ -104,6 +104,7 @@ class CarController(object):
     self.apply_brake_last = 0
     self.last_pump_ts = 0.
     self.packer = CANPacker(dbc_name)
+    self.radarVin_idx = 0
 
   def update(self, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
@@ -120,14 +121,6 @@ class CarController(object):
     # *** rate limit after the enable check ***
     self.brake_last = rate_limit(brake, self.brake_last, -2., 1./100)
 
-    #if using tesla radar, we need to send the VIN
-    if CS.useTeslaRadar and (frame % 100 == 0):
-      useRadar=0
-      if CS.useTeslaRadar:
-        useRadar=1
-      can_sends.append(teslacan.create_radar_VIN_msg(self.radarVin_idx,CS.radarVIN,2,0x17c,useRadar,CS.radarPosition,CS.radarEpasType))
-      self.radarVin_idx += 1
-      self.radarVin_idx = self.radarVin_idx  % 3
 
     # vehicle hud display, wait for one update from 10Hz 0x304 msg
     if hud_show_lanes:
@@ -178,6 +171,12 @@ class CarController(object):
 
     # Send CAN commands.
     can_sends = []
+
+    #if using tesla radar, we need to send the VIN
+    if CS.useTeslaRadar and (frame % 100 == 0):
+      can_sends.append(hondacan.create_radar_VIN_msg(self.radarVin_idx,CS.radarVIN,2,0x17c,1,CS.radarPosition,CS.radarEpasType))
+      self.radarVin_idx += 1
+      self.radarVin_idx = self.radarVin_idx  % 3
 
     # Send steering command.
     idx = frame % 4

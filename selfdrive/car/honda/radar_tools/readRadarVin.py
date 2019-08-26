@@ -695,7 +695,7 @@ def request_transfer_exit(address):
 if __name__ == "__main__":
   from panda.python import Panda
   panda = Panda()
-  bus = 1 
+  bus = 2 
   tx_addr = 0x641 # tesla bosch radar RCM addr 0x18da30f1 # EPS
   tx_queue = Queue()
   rx_queue = Queue()

@@ -19,7 +19,7 @@ CLASS_MIN_PROBABILITY = 20.
 
 # Tesla Bosch firmware has 32 objects in all objects or a selected set of the 5 we should look at
 # definetly switch to all objects when calibrating but most likely use select set of 5 for normal use
-USE_ALL_OBJECTS = True
+USE_ALL_OBJECTS = False
 
 
 def _create_nidec_can_parser():
@@ -51,7 +51,7 @@ def _create_radard_can_parser():
                 ['Class'] * msg_b_n + ['ProbClass'] * msg_b_n +
                 ['Length'] * msg_b_n + ['dZ'] * msg_b_n + ['MovingState'] * msg_b_n,
                 RADAR_A_MSGS * 10 + RADAR_B_MSGS * 7,
-                [255.] * msg_a_n + [0.] * msg_a_n + [0.] * msg_a_n + [0.] * msg_a_n + 
+                [255.] * msg_a_n + [0.] * msg_a_n + [0.] * msg_a_n + [0.] * msg_a_n +
                 [0] * msg_a_n + [0] * msg_a_n + [0] * msg_a_n + [0.] * msg_a_n +
                 [0] * msg_a_n + [0.] * msg_a_n + [0.] * msg_b_n + [0] * msg_b_n +
                 [0] * msg_b_n + [0.] * msg_b_n + [0.] * msg_b_n +[0.] * msg_b_n + [0]* msg_b_n)
@@ -76,9 +76,11 @@ class RadarInterface(object):
       self.delay = 0.1  # Delay of radar
       self.rcp = _create_radard_can_parser()
       self.logcan = messaging.sub_sock(service_list['can'].port)
+      self.radar_off_can = CP.radarOffCan
       self.radarOffset = CarSettings().get_value("radarOffset")
       self.trackId = 1
       self.trigger_msg = RADAR_B_MSGS[-1]
+      self.updated_messages = set()
     else:
       # Nidec radar
       self.TRACK_LEFT_LANE = False
