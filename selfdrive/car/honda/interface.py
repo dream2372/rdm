@@ -142,6 +142,7 @@ class CarInterface(object):
       ret.enableCamera = True
       ret.radarOffCan = any(x for x in BOSCH_RADAR_MSGS if x in fingerprint)
       ret.openpilotLongitudinalControl = not ret.radarOffCan
+      ## TODO: refactor
       ret.enableCruise = False #ret.openpilotLongitudinalControl
     else:
       ret.safetyModel = car.CarParams.SafetyModel.honda
@@ -364,7 +365,7 @@ class CarInterface(object):
 
     ret.gasMaxBP = [0.]  # m/s
     # TODO: what is the correct way to handle this?
-    ret.gasMaxV = [1.] if ret.enableGasInterceptor or ret.openpilotLongitudinalControl else [0.] # max gas allowed
+    ret.gasMaxV = [1.5] if ret.enableGasInterceptor or ret.openpilotLongitudinalControl else [0.] # max gas allowed
     ret.brakeMaxBP = [5., 20.]  # m/s
     ret.brakeMaxV = [1., 0.8]   # max brake allowed
 
