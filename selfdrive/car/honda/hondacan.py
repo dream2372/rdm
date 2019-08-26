@@ -154,7 +154,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
       bus_lkas = 0
       acc_hud_values = {
         'CRUISE_SPEED': hud.v_cruise,
-        'ENABLE_MINI_CAR': hud.mini_car,
+        'ENABLE_MINI_CAR': hud.car != 0,
         #'SET_TO_1': 0x01,
         'HUD_LEAD': hud.car,
         'HUD_DISTANCE': 0x02,
