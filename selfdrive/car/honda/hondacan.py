@@ -83,15 +83,18 @@ def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_b
   # 0 to +2000? = range
   # 720 = no gas
   # (scale from a max of 800 to 2000)
-  torque_request = (accel * 333.33) if enabled and accel > 0. else 720
+  # torque_request = (accel * 333.33) if enabled and accel > 0. else 720
+  torque_request = int(accel) if enabled and accel > 0. else 720
 
   # 1 = brake lights and pump(?)
   # 0 = no brake
-  braking = 1 if enabled and (accel < 0.) else 0
+  # braking = 1 if enabled and (accel < 0.) else 0
+  # # TODO: find a better way to determine if we should be braking or not. the car supports good amounts of engine braking
+  braking = 1 if enabled and (accel < -50.) else 0
 
   # -1599 to +1600? = range
   # 0 = no accel
-  acceleration = accel if enabled else 0
+  acceleration = int(accel) if enabled else 0
 
   acc_control_values = {
     "FORWARD_TORQUE_CMD": torque_request,
