@@ -263,7 +263,7 @@ def thermald_thread():
 
     msg.thermal.thermalStatus = thermal_status
     thermal_sock.send(msg.to_bytes())
-    print(msg)
+    #print(msg)
 
     # report to server once per minute
     if (count % int(60. / DT_TRML)) == 0:

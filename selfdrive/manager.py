@@ -397,7 +397,7 @@ def manager_thread():
 
     # check the status of all processes, did any of them die?
     running_list = ["   running %s %s" % (p, running[p]) for p in running]
-    cloudlog.debug('\n'.join(running_list))
+    #cloudlog.debug('\n'.join(running_list))
 
     # is this still needed?
     if params.get("DoUninstall") == "1":
