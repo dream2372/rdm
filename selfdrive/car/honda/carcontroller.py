@@ -156,6 +156,7 @@ class CarController(object):
 
     # gas and brake
     apply_accel = actuators.gas - actuators.brake
+    raw_accel = actuators.gas - actuators.brake
     apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady, enabled)
     if CS.v_ego_raw > 2.3:
       apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
@@ -184,6 +185,16 @@ class CarController(object):
      lkas_active, CS.CP.carFingerprint, CS.CP.radarOffCan, idx, CS.CP.isPandaBlack))
 
     # Send dashboard UI commands.
+    # debug prints
+    print "vEgo: ",
+    print CS.v_ego_raw,
+    print " aEgo: ",
+    print CS.a_ego,
+    print " Raw Accel: ",
+    print raw_accel,
+    print " Final Accel: ",
+    print apply_accel
+
     if (frame % 10) == 0:
       idx = (frame/10) % 4
       can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.CP.openpilotLongitudinalControl, CS.is_metric, idx, CS.CP.isPandaBlack))
