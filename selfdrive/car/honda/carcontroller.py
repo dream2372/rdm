@@ -8,12 +8,17 @@ from selfdrive.car.honda.values import AH, CruiseButtons, CAR, HONDA_BOSCH
 from selfdrive.can.packer import CANPacker
 
 # Accel limits
-ACCEL_HYST_GAP = 0.02 # don't change accel command for small oscilalitons within this value
-ACCEL_MAX = 1.5
-ACCEL_MIN = -3.0
-ACCEL_STOPPED = -4.8
+ACCEL_HYST_GAP = 5  # don't change accel command for small oscilalitons within this value
+# # TODO:  find this. accel and braking stop responding at a certain point
+ACCEL_RATE_LIMIT_UP = 100
+ACCEL_RATE_LIMIT_DOWN = 100
+ACCEL_MAX = 1600
+ACCEL_MIN = -1599
+# # TODO: Find this in a m/s2 equivalent
+# ACCEL_STOPPED = -1599
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
-ACCEL_SCALE_STOPPED = max(ACCEL_MAX, -ACCEL_STOPPED)
+# ACCEL_SCALE_STOPPED = max(ACCEL_MAX, -ACCEL_STOPPED)
+
 
 def accel_hysteresis(accel, accel_steady, enabled):
 
@@ -25,6 +30,22 @@ def accel_hysteresis(accel, accel_steady, enabled):
     accel_steady = accel - ACCEL_HYST_GAP
   elif accel < accel_steady - ACCEL_HYST_GAP:
     accel_steady = accel + ACCEL_HYST_GAP
+  accel = accel_steady
+
+  return accel, accel_steady
+
+
+def accel_rate_limit(accel, accel_steady, enabled):
+
+  # if desired accel is changing to fast or slow compared to the last desired accel (accel_steady), rate limit it
+  if not enabled:
+    # send 0 when disabled, otherwise acc faults
+    accel_steady = 0.
+  elif accel > (accel_steady + ACCEL_RATE_LIMIT_UP):
+    accel_steady = accel_steady + ACCEL_RATE_LIMIT_UP
+  elif accel < (accel_steady - ACCEL_RATE_LIMIT_DOWN):
+    accel_steady = accel_steady - ACCEL_RATE_LIMIT_DOWN
+
   accel = accel_steady
 
   return accel, accel_steady
@@ -156,12 +177,15 @@ class CarController(object):
 
     # gas and brake
     apply_accel = actuators.gas - actuators.brake
-    raw_accel = actuators.gas - actuators.brake
-    apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady, enabled)
-    if CS.v_ego_raw > 2.3:
-      apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
-    else:
-      apply_accel = clip(apply_accel * ACCEL_SCALE_STOPPED, ACCEL_STOPPED, ACCEL_MAX)
+    # apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady, enabled)
+    apply_accel, self.accel_steady = accel_rate_limit(apply_accel, self.accel_steady, enabled)
+
+    # if CS.v_ego_raw > 2.3:
+    #   apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
+    # else:
+    #   apply_accel = clip(apply_accel * ACCEL_SCALE_STOPPED, ACCEL_STOPPED, ACCEL_MAX)
+    apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
+
 
     # steer torque is converted back to CAN reference (positive when steering right)
     apply_gas = clip(actuators.gas, 0., 1.)
@@ -186,14 +210,10 @@ class CarController(object):
 
     # Send dashboard UI commands.
     # debug prints
-    print "vEgo: ",
-    print CS.v_ego_raw,
-    print " aEgo: ",
-    print CS.a_ego,
-    print " Raw Accel: ",
-    print raw_accel,
-    print " Final Accel: ",
-    print apply_accel
+    print "aEgo: ",
+    print round(CS.a_ego,4),
+    print " Accel: ",
+    print round(apply_accel, 4)
 
     if (frame % 10) == 0:
       idx = (frame/10) % 4
