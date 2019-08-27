@@ -78,16 +78,16 @@ def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_b
   # 0  = gas
   # 17 = no gas
   # 31 = ?!?!
-  state_flag = 0 if enabled and accel > 0 else 17
+  state_flag = 0 if enabled and accel > 0. else 17
 
   # 0 to +2000? = range
   # 720 = no gas
   # (scale from a max of 800 to 2000)
-  torque_request = (accel * 333.33) if enabled and accel > 0 else 720
+  torque_request = (accel * 333.33) if enabled and accel > 0. else 720
 
-  # 1 = brake
+  # 1 = brake lights and pump(?)
   # 0 = no brake
-  braking_flag = 1 if enabled and (accel < -0.2) else 0
+  braking = 1 if enabled and (accel < 0.) else 0
 
   # -1599 to +1600? = range
   # 0 = no accel
@@ -96,12 +96,13 @@ def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_b
   acc_control_values = {
     "FORWARD_TORQUE_CMD": torque_request,
     "STATE_FLAG": state_flag,
-    "BRAKE_LIGHTS": braking_flag,
-    "BRAKE_PUMP_REQUEST": braking_flag,
+    "BRAKE_LIGHTS": braking,
+    "BRAKE_PUMP_REQUEST": braking,
     # setting CONTROL_ON causes car to set POWERTRAIN_DATA->ACC_STATUS = 1
     "CONTROL_ON": control_on,
     "ACCEL_CMD": acceleration,
-    "SET_TO_1": 0x01 if car_fingerprint not in (CAR.CIVIC_BOSCH) else 0,  # not set on civic. is this set for brake system type? starts set to 16 on car power up. drops after 1-2 seconds
+    # # TODO: check for the other cars
+    "SET_TO_1": 0x01 if car_fingerprint not in (CAR.CIVIC_BOSCH) else 0x0,  # not set on civic. is this set for brake system type? starts set to 16 on car power up. drops after 1-2 seconds
   }
   commands.append(packer.make_can_msg("ACC_CONTROL", bus_pt, acc_control_values, idx))
 
@@ -150,12 +151,12 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
 
   if openpilot_longitudinal_control:
     if car_fingerprint in HONDA_BOSCH:
-      # # TODO: refactor
+      # # TODO: check for the other cars
       bus_lkas = 0
       acc_hud_values = {
         'CRUISE_SPEED': hud.v_cruise,
         'ENABLE_MINI_CAR': hud.car != 0,
-        #'SET_TO_1': 0x01,
+        'SET_TO_1': 0x01 if car_fingerprint not in (CAR.CIVIC_BOSCH) else 0x0,
         'HUD_LEAD': hud.car,
         'HUD_DISTANCE': 0x02,
         'ACC_ON': hud.car != 0,
@@ -185,9 +186,8 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, openpilot_longit
       }
     elif car_fingerprint in HONDA_BOSCH:
       radar_hud_values = {
-        # # TODO: refactor
-        # civic has this value set to 0
-        #'SET_TO_1' : 0x01,
+        # # TODO: check for the other cars
+        'SET_TO_1' : 0x01 if car_fingerprint not in (CAR.CIVIC_BOSCH) else 0x0,
       }
       commands.append(packer.make_can_msg('RADAR_HUD', bus_pt, radar_hud_values, idx))
 
