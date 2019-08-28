@@ -9,9 +9,9 @@ from selfdrive.can.packer import CANPacker
 
 # Accel limits
 ACCEL_HYST_GAP = 5  # don't change accel command for small oscilalitons within this value
-# # TODO:  find this. accel and braking stop responding at a certain point
-ACCEL_RATE_LIMIT_UP = 50
-ACCEL_RATE_LIMIT_DOWN = 50
+# # TODO:  find this. braking stops responding at a certain point. car won't hold. Need to go to max brake faster?
+ACCEL_RATE_LIMIT_UP = 0.02
+ACCEL_RATE_LIMIT_DOWN = 0.02
 ACCEL_MAX = 1600
 ACCEL_MIN = -1599
 # # TODO: Find this in a m/s2 equivalent
