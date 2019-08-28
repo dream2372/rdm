@@ -10,8 +10,8 @@ from selfdrive.can.packer import CANPacker
 # Accel limits
 ACCEL_HYST_GAP = 5  # don't change accel command for small oscilalitons within this value
 # # TODO:  find this. accel and braking stop responding at a certain point
-ACCEL_RATE_LIMIT_UP = 100
-ACCEL_RATE_LIMIT_DOWN = 100
+ACCEL_RATE_LIMIT_UP = 50
+ACCEL_RATE_LIMIT_DOWN = 50
 ACCEL_MAX = 1600
 ACCEL_MIN = -1599
 # # TODO: Find this in a m/s2 equivalent
@@ -20,20 +20,24 @@ ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
 # ACCEL_SCALE_STOPPED = max(ACCEL_MAX, -ACCEL_STOPPED)
 
 
-def accel_hysteresis_and_rate_limit(accel, accel_steady, enabled):
+def accel_hysteresis_and_rate_limit(accel, accel_steady, enabled, diff):
   # for small accel oscillations within ACCEL_HYST_GAP, don't change the accel command
   if not enabled:
     # send 0 when disabled, otherwise acc faults
     accel_steady = 0.
+    diff = 0
   else:
+    diff = accel - accel_steady
+    print "Diff: ",
+    print diff
     # rate limit first
     if (accel - accel_steady) > ACCEL_RATE_LIMIT_UP:
       accel_steady = accel_steady + ACCEL_RATE_LIMIT_UP
-      print "Rate: ",
+      print "Limit UP: ",
       print accel_steady
     elif (accel_steady - accel) > ACCEL_RATE_LIMIT_DOWN:
       accel_steady = accel_steady - ACCEL_RATE_LIMIT_DOWN
-      print "Rate: ",
+      print "Limit DN: ",
       print accel_steady
     else:
       accel_steady = accel
@@ -47,7 +51,7 @@ def accel_hysteresis_and_rate_limit(accel, accel_steady, enabled):
     #   print "Hyst: ",
     #   print accel
   accel = accel_steady
-  return accel, accel_steady
+  return accel, accel_steady, diff
 
 
 def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
@@ -119,6 +123,7 @@ class CarController(object):
   def __init__(self, dbc_name):
     self.braking = False
     self.accel_steady = 0.
+    self.accel_diff = 0.
     self.brake_steady = 0.
     self.brake_last = 0.
     self.apply_brake_last = 0
@@ -177,7 +182,7 @@ class CarController(object):
     # gas and brake
     apply_accel = actuators.gas - actuators.brake
     raw_accel = actuators.gas - actuators.brake
-    apply_accel, self.accel_steady = accel_hysteresis_and_rate_limit(apply_accel, self.accel_steady, enabled)
+    apply_accel, self.accel_steady, self.accel_diff = accel_hysteresis_and_rate_limit(apply_accel, self.accel_steady, enabled, self.accel_diff)
 
     # if CS.v_ego_raw > 2.3:
     #   apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
@@ -209,12 +214,12 @@ class CarController(object):
 
     # Send dashboard UI commands.
     # debug prints
-    # print "aEgo: ",
-    # print round(CS.a_ego,4),
-    # print " actuators: ",
-    # print round (raw_accel,4),
-    # print " Accel: ",
-    # print round(apply_accel, 4)
+    print "aEgo: ",
+    print round(CS.a_ego,4),
+    print " actuators: ",
+    print round (raw_accel,4),
+    print " Accel: ",
+    print round(apply_accel, 4)
 
     if (frame % 10) == 0:
       idx = (frame/10) % 4
