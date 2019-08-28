@@ -66,7 +66,7 @@ def create_gas_command(packer, gas_amount, idx):
   return packer.make_can_msg("GAS_COMMAND", 0, values, idx)
 
 
-def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_black):
+def create_acc_commands(packer, enabled, accel, brake, car_fingerprint, idx, is_panda_black):
   bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
 
   commands = []
@@ -84,13 +84,13 @@ def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_b
   # 720 = no gas
   # (scale from a max of 800 to 2000)
   # torque_request = (accel * 333.33) if enabled and accel > 0. else 720
-  torque_request = int(accel) if enabled and accel > 0. else 720
+  torque_request = int(accel) if enabled and accel > 0.0 else 720
 
   # 1 = brake lights and pump(?)
   # 0 = no brake
   # braking = 1 if enabled and (accel < 0.) else 0
   # # TODO: find a better way to determine if we should be braking or not. the car supports good amounts of engine braking
-  braking = 1 if enabled and (accel <= -5.) else 0
+  braking = 1 if enabled and (brake >= 0.1) else 0
   # -1599 to +1600? = range
   # 0 = no accel
   acceleration = int(accel) if enabled else 0
