@@ -28,8 +28,6 @@ def accel_hysteresis_and_rate_limit(accel, accel_steady, enabled, diff):
     diff = 0
   else:
     diff = accel - accel_steady
-    print "Diff: ",
-    print diff
     # rate limit first
     if (accel - accel_steady) > ACCEL_RATE_LIMIT_UP:
       accel_steady = accel_steady + ACCEL_RATE_LIMIT_UP
@@ -219,8 +217,9 @@ class CarController(object):
     print " actuators: ",
     print round (raw_accel,4),
     print " Accel: ",
-    print round(apply_accel, 4)
-
+    print round(apply_accel, 4),
+    print " Diff: ",
+    print round(self.accel_diff, 4)
     if (frame % 10) == 0:
       idx = (frame/10) % 4
       can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.CP.openpilotLongitudinalControl, CS.is_metric, idx, CS.CP.isPandaBlack))
