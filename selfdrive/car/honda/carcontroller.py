@@ -239,7 +239,7 @@ class CarController(object):
       if (frame % 2) == 0:
         if CS.CP.carFingerprint in HONDA_BOSCH:
           idx = frame // 2
-          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, CS.CP.carFingerprint, idx, CS.CP.isPandaBlack))
+          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, actuators.brake, CS.CP.carFingerprint, idx, CS.CP.isPandaBlack))
         else:
           idx = frame // 2
           ts = frame * DT_CTRL
