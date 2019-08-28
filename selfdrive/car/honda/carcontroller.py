@@ -210,16 +210,19 @@ class CarController(object):
     can_sends.append(hondacan.create_steering_control(self.packer, apply_steer,
      lkas_active, CS.CP.carFingerprint, CS.CP.radarOffCan, idx, CS.CP.isPandaBlack))
 
+    # debug prints every 1/4"
+    if (frame % 25) == 0:
+      print "aEgo: ",
+      print round(CS.a_ego,4),
+      print " actuators: ",
+      print round (raw_accel,4),
+      print " Diff: ",
+      print round(self.accel_diff, 4),
+      print " Accel: ",
+      print round(apply_accel, 4)
+
+
     # Send dashboard UI commands.
-    # debug prints
-    print "aEgo: ",
-    print round(CS.a_ego,4),
-    print " actuators: ",
-    print round (raw_accel,4),
-    print " Accel: ",
-    print round(apply_accel, 4),
-    print " Diff: ",
-    print round(self.accel_diff, 4)
     if (frame % 10) == 0:
       idx = (frame/10) % 4
       can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.CP.openpilotLongitudinalControl, CS.is_metric, idx, CS.CP.isPandaBlack))
