@@ -199,9 +199,9 @@ class CarInterface(object):
 
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.4], [0.12]] if is_fw_modified else [[0.8], [0.24]]
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kpV = [3.6, 2.4, 1.5]
+      ret.longitudinalTuning.kpV = [2.6, 2.0, 1.5]
       ret.longitudinalTuning.kiBP = [0., 35.]
-      ret.longitudinalTuning.kiV = [0.54, 0.36]
+      ret.longitudinalTuning.kiV = [0.39, 0.30]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
@@ -366,17 +366,11 @@ class CarInterface(object):
     ret.gasMaxBP = [0.]  # m/s
     # TODO: what is the correct way to handle this?
     ret.gasMaxV = [1.] if ret.enableGasInterceptor or ret.openpilotLongitudinalControl else [0.]  # max gas allowed
-    # ret.brakeMaxBP = [5., 20.]  # m/s
-    # ret.brakeMaxV = [1., 0.8]   # max brake allowed
-    # testing this. braking isn't heavy enough at highway speeds. car doesn't usually stop overall
-    ret.brakeMaxBP = [0.]  # m/s
-    ret.brakeMaxV = [1.]   # max brake allowed
+    ret.brakeMaxBP = [5., 20.]  # m/s
+    ret.brakeMaxV = [1., 0.8]   # max brake allowed
 
-    # ret.longitudinalTuning.deadzoneBP = [0.]
-    # ret.longitudinalTuning.deadzoneV = [0.]
-    # from Toyota
-    ret.longitudinalTuning.deadzoneBP = [0., 9.]
-    ret.longitudinalTuning.deadzoneV = [0., .15]
+    ret.longitudinalTuning.deadzoneBP = [0.]
+    ret.longitudinalTuning.deadzoneV = [0.]
 
     ret.stoppingControl = True
     ret.steerLimitAlert = True

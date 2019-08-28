@@ -20,34 +20,33 @@ ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
 # ACCEL_SCALE_STOPPED = max(ACCEL_MAX, -ACCEL_STOPPED)
 
 
-def accel_hysteresis(accel, accel_steady, enabled):
-
+def accel_hysteresis_and_rate_limit(accel, accel_steady, enabled):
   # for small accel oscillations within ACCEL_HYST_GAP, don't change the accel command
   if not enabled:
     # send 0 when disabled, otherwise acc faults
     accel_steady = 0.
-  elif accel > accel_steady + ACCEL_HYST_GAP:
-    accel_steady = accel - ACCEL_HYST_GAP
-  elif accel < accel_steady - ACCEL_HYST_GAP:
-    accel_steady = accel + ACCEL_HYST_GAP
+  else:
+    # rate limit first
+    if (accel - accel_steady) > ACCEL_RATE_LIMIT_UP:
+      accel_steady = accel_steady + ACCEL_RATE_LIMIT_UP
+      print "Rate: ",
+      print accel_steady
+    elif (accel_steady - accel) > ACCEL_RATE_LIMIT_DOWN:
+      accel_steady = accel_steady - ACCEL_RATE_LIMIT_DOWN
+      print "Rate: ",
+      print accel_steady
+    else:
+      accel_steady = accel
+    # # now apply hysteresis if it still applies
+    # if accel > accel_steady + ACCEL_HYST_GAP:
+    #   accel = accel - ACCEL_HYST_GAP
+    #   print "Hyst: ",
+    #   print accel
+    # elif accel < accel_steady - ACCEL_HYST_GAP:
+    #   accel = accel + ACCEL_HYST_GAP
+    #   print "Hyst: ",
+    #   print accel
   accel = accel_steady
-
-  return accel, accel_steady
-
-
-def accel_rate_limit(accel, accel_steady, enabled):
-
-  # if desired accel is changing to fast or slow compared to the last desired accel (accel_steady), rate limit it
-  if not enabled:
-    # send 0 when disabled, otherwise acc faults
-    accel_steady = 0.
-  elif accel > (accel_steady + ACCEL_RATE_LIMIT_UP):
-    accel_steady = accel_steady + ACCEL_RATE_LIMIT_UP
-  elif accel < (accel_steady - ACCEL_RATE_LIMIT_DOWN):
-    accel_steady = accel_steady - ACCEL_RATE_LIMIT_DOWN
-
-  accel = accel_steady
-
   return accel, accel_steady
 
 
@@ -177,8 +176,8 @@ class CarController(object):
 
     # gas and brake
     apply_accel = actuators.gas - actuators.brake
-    # apply_accel, self.accel_steady = accel_hysteresis(apply_accel, self.accel_steady, enabled)
-    apply_accel, self.accel_steady = accel_rate_limit(apply_accel, self.accel_steady, enabled)
+    raw_accel = actuators.gas - actuators.brake
+    apply_accel, self.accel_steady = accel_hysteresis_and_rate_limit(apply_accel, self.accel_steady, enabled)
 
     # if CS.v_ego_raw > 2.3:
     #   apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
@@ -210,10 +209,12 @@ class CarController(object):
 
     # Send dashboard UI commands.
     # debug prints
-    print "aEgo: ",
-    print round(CS.a_ego,4),
-    print " Accel: ",
-    print round(apply_accel, 4)
+    # print "aEgo: ",
+    # print round(CS.a_ego,4),
+    # print " actuators: ",
+    # print round (raw_accel,4),
+    # print " Accel: ",
+    # print round(apply_accel, 4)
 
     if (frame % 10) == 0:
       idx = (frame/10) % 4

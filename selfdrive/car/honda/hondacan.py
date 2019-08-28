@@ -90,8 +90,8 @@ def create_acc_commands(packer, enabled, accel, car_fingerprint, idx, is_panda_b
   # 0 = no brake
   # braking = 1 if enabled and (accel < 0.) else 0
   # # TODO: find a better way to determine if we should be braking or not. the car supports good amounts of engine braking
-  braking = 1 if enabled and (accel < -50.) else 0
-
+  braking = 1 if enabled and (accel <= -5.) else 0
+  print braking
   # -1599 to +1600? = range
   # 0 = no accel
   acceleration = int(accel) if enabled else 0
