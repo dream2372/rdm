@@ -66,7 +66,7 @@ def create_gas_command(packer, gas_amount, idx):
   return packer.make_can_msg("GAS_COMMAND", 0, values, idx)
 
 
-def create_acc_commands(packer, enabled, accel, brake, car_fingerprint, idx, is_panda_black):
+def create_acc_commands(packer, enabled, accel, brake, stopping, release_hold, car_fingerprint, idx, is_panda_black):
   bus_pt = get_pt_bus(car_fingerprint, is_panda_black)
 
   commands = []
@@ -98,8 +98,10 @@ def create_acc_commands(packer, enabled, accel, brake, car_fingerprint, idx, is_
   acc_control_values = {
     "FORWARD_TORQUE_CMD": torque_request,
     "STATE_FLAG": state_flag,
-    "BRAKE_LIGHTS": braking,
-    "BRAKE_PUMP_REQUEST": braking,
+    "STOPPING_STOPPED": stopping,
+    "RELEASING_HOLD": release_hold,
+    "BRAKING_1": braking,
+    "BRAKING_2": braking,
     # setting CONTROL_ON causes car to set POWERTRAIN_DATA->ACC_STATUS = 1
     "CONTROL_ON": control_on,
     "ACCEL_CMD": acceleration,
