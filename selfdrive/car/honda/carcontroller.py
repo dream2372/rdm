@@ -10,11 +10,11 @@ from selfdrive.can.packer import CANPacker
 # Accel limits
 ACCEL_HYST_GAP = 5  # don't change accel command for small oscilalitons within this value
 # # TODO:  find this. braking stops responding at a certain point. car won't hold. Need to go to max brake faster?
-ACCEL_RATE_LIMIT_UP = 0.02
-ACCEL_RATE_LIMIT_DOWN = 0.02
-ACCEL_MAX = 1600
-ACCEL_MIN = -1599
-# # TODO: Find this in a m/s2 equivalent
+ACCEL_RATE_LIMIT_UP = 0.
+ACCEL_RATE_LIMIT_DOWN = 0.
+ACCEL_MAX = 1023
+ACCEL_MIN = -1023
+# # TODO: Find this in a m/s2 equivalent to max safety spec braking
 # ACCEL_STOPPED = -1599
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
 # ACCEL_SCALE_STOPPED = max(ACCEL_MAX, -ACCEL_STOPPED)
@@ -52,7 +52,7 @@ def accel_hysteresis_and_rate_limit(accel, accel_steady, enabled, diff):
   return accel, accel_steady, diff
 
 
-def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
+def actuator_hystereses(brake, braking, brake_steady, stopping, release_hold, v_ego, car_fingerprint):
   # hyst params
   brake_hyst_on = 0.02     # to activate brakes exceed this value
   brake_hyst_off = 0.005                     # to deactivate brakes below this value
@@ -62,6 +62,12 @@ def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   if (brake < brake_hyst_on and not braking) or brake < brake_hyst_off:
     brake = 0.
   braking = brake > 0.
+
+  #bosch has extra flags for these
+  # set this before we've come to a complete stop, else the car cannot hold
+  stopping = braking and v_ego <= 2.5
+  # this must be triggered to, i'm guessing, bleed the system pressure after releasing from a stop
+  release_hold = brake = 0. and brake_steady > 0.
 
   # for small brake oscillations within brake_hyst_gap, don't change the brake command
   if brake == 0.:
@@ -75,7 +81,7 @@ def actuator_hystereses(brake, braking, brake_steady, v_ego, car_fingerprint):
   if (car_fingerprint in (CAR.ACURA_ILX, CAR.CRV)) and brake > 0.0:
     brake += 0.15
 
-  return brake, braking, brake_steady
+  return brake, braking, brake_steady, stopping, release_hold
 
 
 def brake_pump_hysteresis(apply_brake, apply_brake_last, last_pump_ts, ts):
@@ -124,6 +130,8 @@ class CarController(object):
     self.accel_diff = 0.
     self.brake_steady = 0.
     self.brake_last = 0.
+    self.stopping = False
+    self.release_hold = False
     self.apply_brake_last = 0
     self.last_pump_ts = 0.
     self.packer = CANPacker(dbc_name)
@@ -134,7 +142,7 @@ class CarController(object):
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert):
 
     # *** apply brake hysteresis ***
-    brake, self.braking, self.brake_steady = actuator_hystereses(actuators.brake, self.braking, self.brake_steady, CS.v_ego, CS.CP.carFingerprint)
+    brake, self.braking, self.brake_steady, self.stopping, self.release_hold = actuator_hystereses(actuators.brake, self.braking, self.brake_steady, CS.v_ego, CS.CP.carFingerprint)
 
     # *** no output if not enabled ***
     if not enabled and CS.pcm_acc_status:
@@ -211,13 +219,13 @@ class CarController(object):
      lkas_active, CS.CP.carFingerprint, CS.CP.radarOffCan, idx, CS.CP.isPandaBlack))
 
     # debug prints every 1/4"
-    if (frame % 25) == 0:
+    if (frame % 20) == 0:
       print "aEgo: ",
       print round(CS.a_ego,4),
-      print " actuators: ",
-      print round (raw_accel,4),
       print " Diff: ",
       print round(self.accel_diff, 4),
+      print " actuators: ",
+      print round (raw_accel,4),
       print " Accel: ",
       print round(apply_accel, 4)
 
@@ -239,7 +247,7 @@ class CarController(object):
       if (frame % 2) == 0:
         if CS.CP.carFingerprint in HONDA_BOSCH:
           idx = frame // 2
-          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, actuators.brake, CS.CP.carFingerprint, idx, CS.CP.isPandaBlack))
+          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, actuators.brake, self.stopping, self.release_hold, CS.CP.carFingerprint, idx, CS.CP.isPandaBlack))
         else:
           idx = frame // 2
           ts = frame * DT_CTRL
