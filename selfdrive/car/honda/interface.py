@@ -198,14 +198,10 @@ class CarInterface(object):
         ret.lateralTuning.pid.kf = 0.00004
 
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.4], [0.12]] if is_fw_modified else [[0.8], [0.24]]
-      ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
-      ret.longitudinalTuning.kiBP = [0., 35.]
-      ret.longitudinalTuning.kiV = [0.18, 0.12]
-      # ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      # ret.longitudinalTuning.kpV = [1.5, , 1.5]
-      # ret.longitudinalTuning.kiBP = [0., 35.]
-      # ret.longitudinalTuning.kiV = [0.23, 0.60]
+      ret.longitudinalKpBP = [0., 5., 35.]
+      ret.longitudinalKpV = [3.6, 2.4, 1.5]
+      ret.longitudinalKiBP = [0., 35.]
+      ret.longitudinalKiV = [0.54, 0.36]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORD_15, CAR.ACCORDH):
       stop_and_go = True
