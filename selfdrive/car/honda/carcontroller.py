@@ -142,7 +142,7 @@ class CarController(object):
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert):
 
     # *** apply brake hysteresis ***
-    brake, self.braking, self.brake_steady, self.stopping, self.release_hold = actuator_hystereses(actuators.brake, self.braking, self.brake_steady, CS.v_ego, CS.CP.carFingerprint)
+    brake, self.braking, self.brake_steady, self.stopping, self.release_hold = actuator_hystereses(actuators.brake, self.braking, self.brake_steady, self.stopping, self.release_hold, CS.v_ego, CS.CP.carFingerprint)
 
     # *** no output if not enabled ***
     if not enabled and CS.pcm_acc_status:
