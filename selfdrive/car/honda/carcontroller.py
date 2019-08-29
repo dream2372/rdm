@@ -18,7 +18,7 @@ ACCEL_MIN = -700
 ACCEL_STOPPED = -1023
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
 ACCEL_SCALE_STOPPED = max(ACCEL_MAX, -ACCEL_STOPPED)
-STOPPING_SPEED = 2.5 # m/s
+STOPPING_SPEED = 2 # m/s
 
 def accel_hysteresis_and_rate_limit(accel, accel_steady, enabled, diff):
   # for small accel oscillations within ACCEL_HYST_GAP, don't change the accel command
