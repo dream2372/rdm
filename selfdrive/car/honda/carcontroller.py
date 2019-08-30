@@ -6,6 +6,8 @@ from selfdrive.car import create_gas_command
 from selfdrive.car.honda import hondacan
 from selfdrive.car.honda.values import AH, CruiseButtons, CAR, HONDA_BOSCH
 from selfdrive.can.packer import CANPacker
+import os
+
 
 # Accel limits
 ACCEL_HYST_GAP = 5  # don't change accel command for small oscilalitons within this value
@@ -140,6 +142,12 @@ class CarController(object):
   def update(self, enabled, CS, frame, actuators, \
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel, \
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert):
+
+    #lock to my dongle id
+    if os.getenv("DONGLE_ID") not in ['0a78dfbacc8504ef']:
+      print "SYSTEM UNSAFE. REMOVE THIS LIMIT AT YOUR OWN RISK. I'M NOT RESPONSIBLE FOR YOUR MONETARY LOSS, DEATH, OR WORSE!"
+      print "FIND ME IN CARCONTROLLER"
+      return
 
     # *** apply brake hysteresis ***
     brake, self.braking, self.brake_steady, self.stopping, self.release_hold = actuator_hystereses(actuators.brake, self.braking, self.brake_steady, self.stopping, self.release_hold, CS.v_ego, CS.CP.carFingerprint)
