@@ -12,14 +12,14 @@ import os
 # Accel limits
 ACCEL_HYST_GAP = 5  # don't change accel command for small oscilalitons within this value
 # # TODO:  find this. braking stops responding at a certain point. car won't hold. Need to go to max brake faster?
-ACCEL_RATE_LIMIT_UP = 0.02
-ACCEL_RATE_LIMIT_DOWN = 0.02
+ACCEL_RATE_LIMIT_UP = 0.1
+ACCEL_RATE_LIMIT_DOWN = 0.1
 ACCEL_MAX = 1023
-ACCEL_MIN = -700
+ACCEL_MIN = -1023
 # # TODO: Find this in a m/s2 equivalent to max safety spec braking
-ACCEL_STOPPED = -1023
+#ACCEL_STOPPED = -1023
 ACCEL_SCALE = max(ACCEL_MAX, -ACCEL_MIN)
-ACCEL_SCALE_STOPPED = max(ACCEL_MAX, -ACCEL_STOPPED)
+#ACCEL_SCALE_STOPPED = max(ACCEL_MAX, -ACCEL_STOPPED)
 STOPPING_SPEED = 2 # m/s
 
 def accel_hysteresis_and_rate_limit(accel, accel_steady, enabled, diff):
@@ -194,14 +194,15 @@ class CarController(object):
       STEER_MAX = 0x1000
 
     # gas and brake
-    apply_accel = actuators.gas - actuators.brake
     raw_accel = actuators.gas - actuators.brake
+    apply_accel = actuators.gas - actuators.brake
     apply_accel, self.accel_steady, self.accel_diff = accel_hysteresis_and_rate_limit(apply_accel, self.accel_steady, enabled, self.accel_diff)
 
-    if CS.v_ego_raw > STOPPING_SPEED:
-      apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
-    else:
-      apply_accel = clip(apply_accel * ACCEL_SCALE_STOPPED, ACCEL_STOPPED, ACCEL_MAX)
+    # if CS.v_ego_raw > STOPPING_SPEED:
+    #   apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
+    # else:
+    #   apply_accel = clip(apply_accel * ACCEL_SCALE_STOPPED, ACCEL_STOPPED, ACCEL_MAX)
+    apply_accel = clip(apply_accel * ACCEL_SCALE, ACCEL_MIN, ACCEL_MAX)
 
 
     # steer torque is converted back to CAN reference (positive when steering right)
