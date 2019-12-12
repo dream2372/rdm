@@ -367,6 +367,9 @@ class CarInterface(CarInterfaceBase):
     ret.steerRateCost = 0.5
     ret.steerLimitTimer = 0.8
 
+    # # TODO: refactor to be based on the gearbox messages. Determine gearbox messages. Only support certain car variants down below?
+    ret.transmissionType = car.CarParams.TransmissionType.manual
+
     return ret
 
   # returns a car.CarState
