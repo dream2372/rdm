@@ -164,6 +164,7 @@ if __name__ == "__main__":
   import argparse
   import cereal.messaging as messaging
   from selfdrive.car.vin import get_vin
+  from selfdrive.car.teslaradarvin import get_tesla_radar_vin
 
   parser = argparse.ArgumentParser(description='Get firmware version of ECUs')
   parser.add_argument('--scan', action='store_true')
@@ -189,6 +190,13 @@ if __name__ == "__main__":
   addr, vin = get_vin(logcan, sendcan, 1, retry=10, debug=args.debug)
   print(f"VIN: {vin}")
   print("Getting VIN took %.3f s" % (time.time() - t))
+  print()
+
+  # only supports black panda/uno
+  print("Getting tesla radar vin...")
+  addr, tesla_radar_vin = get_tesla_radar_vin(logcan, sendcan, 0, retry=10, debug=args.debug)
+  print(f"Tesla Radar VIN: {tesla_radar_vin}")
+  print("Getting Tesla Radar VIN took %.3f s" % (time.time() - t))
   print()
 
   t = time.time()
