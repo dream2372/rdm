@@ -200,6 +200,13 @@ if __name__ == "__main__":
   print()
 
   t = time.time()
+  print("Getting tesla radar vin...")
+  addr, vin = get_tesla_radar_vin(logcan, sendcan, 0, retry=10, debug=args.debug)
+  print(f"Tesla radar VIN: {vin}")
+  print("Getting tesla radar VIN took %.3f s" % (time.time() - t))
+  print()
+
+  t = time.time()
   fw_vers = get_fw_versions(logcan, sendcan, 1, extra=extra, debug=args.debug, progress=True)
   candidates = match_fw_to_car(fw_vers)
 
