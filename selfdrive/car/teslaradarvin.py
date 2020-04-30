@@ -2,26 +2,32 @@
 import traceback
 
 import cereal.messaging as messaging
-from panda.python.uds import FUNCTIONAL_ADDRS
 from selfdrive.car.isotp_parallel_query import IsoTpParallelQuery
 from selfdrive.swaglog import cloudlog
 
-VIN_REQUEST = b'\xF1\x90'
-VIN_RESPONSE = b'\x49\x02\x01' ??
-VIN_UNKNOWN = "0" * 17
+RADAR_ADDR = 0x641
+EXT_DIAG_REQUEST = b'\x02\x3E'
+EXT_DIAG_RESPONSE = b'\x02\x7E'
+COM_CONT_REQUEST = b'\x28\x83\x03'
+COM_CONT_RESPONSE = b''
 
-
-def get_tesla_radar_vin(logcan, sendcan, bus, timeout=0.1, retry=5, debug=False):
+def get_radar_vin(logcan, sendcan, bus, timeout=0.1, retry=5, debug=False):
+  print(f"Get radar vin {hex(RADAR_ADDR)} ...")
   for i in range(retry):
     try:
-      query = IsoTpParallelQuery(sendcan, logcan, bus, 0x641, [VIN_REQUEST], [VIN_RESPONSE], functional_addr=True, debug=debug)
-      for addr, vin in query.get_data(timeout).items():
-        return addr[0], vin.decode()
-      print(f"tesla radar vin query retry ({i+1}) ...")
+      # enter extended diagnostic session
+      query = IsoTpParallelQuery(sendcan, logcan, bus, [RADAR_ADDR], [EXT_DIAG_REQUEST], [EXT_DIAG_RESPONSE], debug=debug)
+      for addr, dat in query.get_data(timeout).items():
+        print(f"Getting VIN...")
+        # communication control disable tx and rx
+        query = IsoTpParallelQuery(sendcan, logcan, bus, [RADAR_ADDR], [COM_CONT_REQUEST], [COM_CONT_RESPONSE], debug=debug)
+        query.get_data(0)
+        return True
+      print(f"radar vin retry ({i+1}) ...")
     except Exception:
-      cloudlog.warning(f"Tesla Radar VIN query exception: {traceback.format_exc()}")
+      cloudlog.warning(f"radar vin exception: {traceback.format_exc()}")
 
-  return 0, VIN_UNKNOWN
+  return False
 
 
 if __name__ == "__main__":
@@ -29,5 +35,5 @@ if __name__ == "__main__":
   sendcan = messaging.pub_sock('sendcan')
   logcan = messaging.sub_sock('can')
   time.sleep(1)
-  addr, vin = get_tesla_radar_vin(logcan, sendcan, 0, debug=False)
-  print(hex(addr), vin)
+  radar_vin = get_radar_vin(logcan, sendcan, 0, debug=True)
+  print(f"VIN: {radar_vin}")
