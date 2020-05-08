@@ -24,7 +24,7 @@ ACCEL_MIN = -3.5
 
 
 class CarInterfaceBase(ABC):
-  def __init__(self, CP, CarController, CarState):
+  def __init__(self, CP, CarController, IOCController, CarState):
     self.CP = CP
     self.VM = VehicleModel(CP)
 
@@ -41,8 +41,12 @@ class CarInterfaceBase(ABC):
       self.cp_loopback = self.CS.get_loopback_can_parser(CP)
 
     self.CC = None
+    self.IOC = None
+
     if CarController is not None:
       self.CC = CarController(self.cp.dbc_name, CP, self.VM)
+    if IOCController is not None:
+      self.IOC = IOCController(self.cp_body.dbc_name, CP)
 
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):

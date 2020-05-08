@@ -1,5 +1,11 @@
 Version 0.8.13 (2022-02-18)
 ========================
+ * Autofocuser body harness or equivalent required.
+ * New body features and improvements:
+   * New toggle! Turn signal control during assisted lane changes on some Hondas.
+   * New toggle! Experimental cloud control of door locks via athena (tested on 2017 Honda Civic Hatchback). Note: Requires manual firmware update of the body harness panda (automatic update coming soon).
+   * bodyd refactor. BodyState published by bodyd which can be read by athena via the comma API.
+   * BSI/BSM integration for all supporting Hondas
  * Improved driver monitoring
    * Retuned driver pose learner for relaxed driving positions
    * Added reliance on driving model to be more scene adaptive

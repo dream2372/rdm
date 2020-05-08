@@ -24,13 +24,14 @@ from websocket import (ABNF, WebSocketException, WebSocketTimeoutException,
                        create_connection)
 
 import cereal.messaging as messaging
-from cereal import log
+from cereal import log, body
 from cereal.services import service_list
 from common.api import Api
 from common.basedir import PERSIST
 from common.file_helpers import CallbackReader
 from common.params import Params
 from common.realtime import sec_since_boot
+from selfdrive.bodyd.lib.bodyd_helpers import is_offroad
 from selfdrive.hardware import HARDWARE, PC, TICI
 from selfdrive.loggerd.config import ROOT
 from selfdrive.loggerd.xattr_cache import getxattr, setxattr
@@ -52,6 +53,8 @@ MAX_AGE = 31 * 24 * 3600  # seconds
 WS_FRAME_SIZE = 4096
 
 NetworkType = log.DeviceState.NetworkType
+DoorLock = body.BodyState.Door.Lock
+BodyCommand = body.BodyControl.Command
 
 dispatcher["echo"] = lambda s: s
 recv_queue: Any = queue.Queue()
@@ -253,6 +256,70 @@ def getMessage(service=None, timeout=1000):
     raise TimeoutError
 
   return ret.to_dict()
+
+
+@dispatcher.add_method
+def bodyControl(command=None, timeout=6000):
+  """Listens for bodyState and sends the desired command to bodyd."""
+
+  p = Params()
+  result = None
+
+  if p.get("AF_OffroadCAN") == b'0':
+    result = "Cloud control disabled in settings."
+  if not is_offroad(p):
+    result = "Not available. Car is on"
+  if command is None:
+    result = "Command not specified in call"
+  else:
+    command = getattr(BodyCommand, command)
+  if result is None:
+    sm = messaging.SubMaster(['bodyState'])
+    pm = messaging.PubMaster(['bodyControl'])
+    bc = messaging.new_message('bodyControl')
+
+    # wait for readers to (re)connect
+    time.sleep(0.25)
+
+    bc.bodyControl.command = command
+    pm.send('bodyControl', bc)
+    time.sleep(0.5)
+    t_start = time.monotonic_ns()
+    timeout = 5 * 1e9
+
+    # this isn't very dependable yet.
+    # TODO: retry better
+
+    while time.monotonic_ns() - t_start < timeout and result is None:
+      sm.update(1000)
+      if sm.updated['bodyState']:
+        if command == BodyCommand.doorUnlockAll:
+           if sm['bodyState'].frontLeftDoor.lock == DoorLock.unlocked and \
+             sm['bodyState'].frontRightDoor.lock == DoorLock.unlocked and \
+             sm['bodyState'].rearLeftDoor.lock == DoorLock.unlocked and \
+             sm['bodyState'].rearRightDoor.lock == DoorLock.unlocked:
+             result = "Command successful."
+           else:
+             continue
+        elif command == BodyCommand.doorLockAll:
+           if sm['bodyState'].frontLeftDoor.lock == DoorLock.locked and \
+             sm['bodyState'].frontRightDoor.lock == DoorLock.locked and \
+             sm['bodyState'].rearLeftDoor.lock == DoorLock.locked and \
+             sm['bodyState'].rearRightDoor.lock == DoorLock.locked:
+             result = "Command successful."
+           else:
+             continue
+        else:
+           result = "Command unsupported."
+
+      if result is None:
+        # resend until we timeout or have great success
+        pm.send('bodyControl', bc)
+        time.sleep(0.25)
+    if result is None:
+      result = "Command failed."
+
+  return result
 
 
 @dispatcher.add_method

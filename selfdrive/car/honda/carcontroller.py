@@ -8,8 +8,10 @@ from selfdrive.car.honda import hondacan
 from selfdrive.car.honda.values import CruiseButtons, VISUAL_HUD, HONDA_BOSCH, HONDA_NIDEC_ALT_PCM_ACCEL, CarControllerParams
 from opendbc.can.packer import CANPacker
 
+
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 LongCtrlState = car.CarControl.Actuators.LongControlState
+
 
 def compute_gb_honda_bosch(accel, speed):
   #TODO returns 0s, is unused
@@ -95,6 +97,19 @@ HUDData = namedtuple("HUDData",
                      ["pcm_accel", "v_cruise", "car",
                      "lanes", "fcw", "acc_alert", "steer_required"])
 
+# class BodyController():
+#   def __init__(self):
+#     raise Exception('BodyController: not implemented')
+#     # self.packer = CANPacker(dbc_name)
+#
+#   def update(self):
+#     # Send CAN commands. Not for use when onroad
+#     if not allowed():
+#       return None
+#     can_sends = []
+#     # do stuff
+#     return can_sends
+
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
@@ -103,7 +118,9 @@ class CarController():
     self.brake_last = 0.
     self.apply_brake_last = 0
     self.last_pump_ts = 0.
+
     self.packer = CANPacker(dbc_name)
+    self.packer_body = CANPacker(dbc_name)
 
     self.accel = 0
     self.speed = 0
@@ -111,6 +128,7 @@ class CarController():
     self.brake = 0
 
     self.params = CarControllerParams(CP)
+
 
   def update(self, enabled, active, CS, frame, actuators, pcm_cancel_cmd,
              hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert):
@@ -145,7 +163,6 @@ class CarController():
       hud_car = 0
 
     fcw_display, steer_required, acc_alert = process_hud_alert(hud_alert)
-
 
     # **** process the car messages ****
 
@@ -260,5 +277,6 @@ class CarController():
     new_actuators.accel = self.accel
     new_actuators.gas = self.gas
     new_actuators.brake = self.brake
+
 
     return new_actuators, can_sends

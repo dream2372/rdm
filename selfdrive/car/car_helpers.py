@@ -52,8 +52,13 @@ def load_interfaces(brand_names):
     else:
       CarController = None
 
+    if os.path.exists(BASEDIR + '/' + path.replace('.', '/') + '/ioc.py'):
+      IOCController = __import__(path + '.ioc', fromlist=['IOCController']).IOCController
+    else:
+      IOCController = None
+
     for model_name in brand_names[brand_name]:
-      ret[model_name] = (CarInterface, CarController, CarState)
+      ret[model_name] = (CarInterface, CarController, IOCController, CarState)
   return ret
 
 
@@ -173,11 +178,11 @@ def get_car(logcan, sendcan):
     cloudlog.warning("car doesn't match any fingerprints: %r", fingerprints)
     candidate = "mock"
 
-  CarInterface, CarController, CarState = interfaces[candidate]
+  CarInterface, CarController, IOCController, CarState = interfaces[candidate]
   car_params = CarInterface.get_params(candidate, fingerprints, car_fw)
   car_params.carVin = vin
   car_params.carFw = car_fw
   car_params.fingerprintSource = source
   car_params.fuzzyFingerprint = not exact_match
 
-  return CarInterface(car_params, CarController, CarState), car_params
+  return CarInterface(car_params, CarController, IOCController, CarState), car_params

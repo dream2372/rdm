@@ -5,8 +5,8 @@ from selfdrive.car import STD_CARGO_KG, scale_rot_inertia, scale_tire_stiffness,
 from selfdrive.car.interfaces import CarInterfaceBase
 
 class CarInterface(CarInterfaceBase):
-  def __init__(self, CP, CarController, CarState):
-    super().__init__(CP, CarController, CarState)
+  def __init__(self, CP, CarController, IOCController, CarState):
+    super().__init__(CP, CarController, IOCController, CarState)
     self.cp_adas = self.CS.get_adas_can_parser(CP)
 
   @staticmethod

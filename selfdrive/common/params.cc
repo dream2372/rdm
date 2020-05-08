@@ -89,7 +89,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"CalibrationParams", PERSISTENT},
     {"CarBatteryCapacity", PERSISTENT},
     {"CarParams", CLEAR_ON_MANAGER_START | CLEAR_ON_IGNITION_ON},
-    {"CarParamsCache", CLEAR_ON_MANAGER_START},
+    {"CarParamsCache", CLEAR_ON_IGNITION_ON},
     {"CarVin", CLEAR_ON_MANAGER_START | CLEAR_ON_IGNITION_ON},
     {"CompletedTrainingVersion", PERSISTENT},
     {"ControlsReady", CLEAR_ON_MANAGER_START | CLEAR_ON_IGNITION_ON},
@@ -175,6 +175,8 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"Offroad_TemperatureTooHigh", CLEAR_ON_MANAGER_START},
     {"Offroad_UnofficialHardware", CLEAR_ON_MANAGER_START},
     {"Offroad_UpdateFailed", CLEAR_ON_MANAGER_START},
+    {"AF_TurnSignalControl", PERSISTENT},
+    {"AF_OffroadCAN", PERSISTENT},
 };
 
 } // namespace

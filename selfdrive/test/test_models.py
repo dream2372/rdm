@@ -89,13 +89,13 @@ class TestCarModel(unittest.TestCase):
 
     cls.can_msgs = sorted(can_msgs, key=lambda msg: msg.logMonoTime)
 
-    cls.CarInterface, cls.CarController, cls.CarState = interfaces[cls.car_model]
+    cls.CarInterface, cls.CarController, cls.IOCController, cls.CarState = interfaces[cls.car_model]
     cls.CP = cls.CarInterface.get_params(cls.car_model, fingerprint, [])
     assert cls.CP
     assert cls.CP.carFingerprint == cls.car_model
 
   def setUp(self):
-    self.CI = self.CarInterface(self.CP, self.CarController, self.CarState)
+    self.CI = self.CarInterface(self.CP, self.CarController, self.IOCController, self.CarState)
     assert self.CI
 
     # TODO: check safetyModel is in release panda build
