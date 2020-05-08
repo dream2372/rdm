@@ -100,6 +100,9 @@ class Controls:
     self.is_ldw_enabled = params.get_bool("IsLdwEnabled")
     openpilot_enabled_toggle = params.get_bool("OpenpilotEnabledToggle")
     passive = params.get_bool("Passive") or not openpilot_enabled_toggle
+    self.IocControl = params.get("AF_TurnSignalControl") == b"1" and self.CI.IOC is not None
+    if self.IocControl:
+      self.iocLockout = False
 
     # detect sound card presence and ensure successful init
     sounds_available = HARDWARE.get_sound_card_online()
@@ -598,6 +601,11 @@ class Controls:
     if hudControl.rightLaneDepart or hudControl.leftLaneDepart:
       self.events.add(EventName.ldw)
 
+    if self.IocControl:
+      if self.iocLockout:
+        print('controlsd ioc lockout')
+        self.events.add(EventName.canError)
+
     clear_event_types = set()
     if ET.WARNING not in self.current_alert_types:
       clear_event_types.add(ET.WARNING)
@@ -613,6 +621,12 @@ class Controls:
     if not self.read_only and self.initialized:
       # send car controls over can
       self.last_actuators, can_sends = self.CI.apply(CC)
+
+      if self.IocControl:
+        ioc_out, self.iocLockout = self.CI.IOC.update(self.sm.frame, self.CI.CS, self.sm['lateralPlan'].desire, self.sm['driverMonitoringState'])
+        if ioc_out:
+          can_sends.extend(ioc_out)
+
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
       CC.actuatorsOutput = self.last_actuators
 

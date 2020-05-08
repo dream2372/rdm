@@ -18,7 +18,7 @@ class TestCarInterfaces(unittest.TestCase):
     else:
       fingerprint = {}
 
-    CarInterface, CarController, CarState = interfaces[car_name]
+    CarInterface, CarController, IOCController, CarState = interfaces[car_name]
     fingerprints = {
       0: fingerprint,
       1: fingerprint,
@@ -28,7 +28,7 @@ class TestCarInterfaces(unittest.TestCase):
     car_fw = []
 
     car_params = CarInterface.get_params(car_name, fingerprints, car_fw)
-    car_interface = CarInterface(car_params, CarController, CarState)
+    car_interface = CarInterface(car_params, CarController, IOCController, CarState)
     assert car_params
     assert car_interface
 

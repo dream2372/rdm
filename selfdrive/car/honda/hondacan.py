@@ -137,7 +137,6 @@ def create_ui_commands(packer, CP, pcm_speed, hud, is_metric, idx, stock_hud):
 
   lkas_hud_values = {
     'SET_ME_X41': 0x41,
-    'SET_ME_X48': 0x48,
     'STEERING_REQUIRED': hud.steer_required,
     'SOLID_LANES': hud.lanes,
     'BEEP': 0,
@@ -172,3 +171,12 @@ def spam_buttons_command(packer, button_val, idx, car_fingerprint):
   }
   bus = get_pt_bus(car_fingerprint)
   return packer.make_can_msg("SCM_BUTTONS", bus, values, idx)
+
+
+def bcm_io_over_can(packer, command, bus=0):
+  values = {
+    'D0': command[0],
+    'D1': command[1][0],
+    'D2': command[1][1]
+  }
+  return packer.make_can_msg("IOC_BCM_REQ", bus, values)

@@ -48,8 +48,7 @@ class CarInterface(CarInterfaceBase):
 
       ret.pcmCruise = not ret.enableGasInterceptor
 
-    if candidate == CAR.CRV_5G:
-      ret.enableBsm = 0x12f8bfa7 in fingerprint[0]
+    ret.enableBsm = 0x12f8bfa7 in fingerprint[0]
 
     # Detect Bosch cars with new HUD msgs
     if any(0x33DA in f for f in fingerprint.values()):
@@ -109,9 +108,13 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = CivicParams.WHEELBASE
       ret.centerToFront = CivicParams.CENTER_TO_FRONT
       ret.steerRatio = 15.38  # 10.93 is end-to-end spec
-      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
+      if eps_modified:
+        ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2564, 8000], [0, 2564, 3840]]
+        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.1], [0.03]]
+      else:
+        ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
+        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
       tire_stiffness_factor = 1.
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORDH):
       stop_and_go = True
@@ -338,6 +341,8 @@ class CarInterface(CarInterfaceBase):
 
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
 
+    # TODO: Discover more B-CAN frame timing
+    # TODO: Fix? Tests will always fail due to lack of b-can data
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid and (self.cp_body is None or self.cp_body.can_valid)
 
     buttonEvents = []

@@ -6,6 +6,7 @@ from opendbc.can.parser import CANParser
 from selfdrive.config import Conversions as CV
 from selfdrive.car.interfaces import CarStateBase
 from selfdrive.car.honda.values import CAR, DBC, STEER_THRESHOLD, HONDA_BOSCH, HONDA_NIDEC_ALT_SCM_MESSAGES, HONDA_BOSCH_ALT_BRAKE_SIGNAL
+from selfdrive.car.honda.body import get_body_parser
 
 TransmissionType = car.CarParams.TransmissionType
 
@@ -305,12 +306,13 @@ class CarState(CarStateBase):
       self.stock_hud = cp_cam.vl["ACC_HUD"]
       self.stock_brake = cp_cam.vl["BRAKE_COMMAND"]
 
-    if self.CP.enableBsm and self.CP.carFingerprint in (CAR.CRV_5G, ):
+    if self.CP.enableBsm:
       # BSM messages are on B-CAN, requires a panda forwarding B-CAN messages to CAN 0
       # more info here: https://github.com/commaai/openpilot/pull/1867
       ret.leftBlindspot = cp_body.vl["BSM_STATUS_LEFT"]["BSM_ALERT"] == 1
       ret.rightBlindspot = cp_body.vl["BSM_STATUS_RIGHT"]["BSM_ALERT"] == 1
 
+    self.iocFeedback = cp_body.vl["IOC_BCM_FDBK"]
     return ret
 
   def get_can_parser(self, CP):
@@ -343,14 +345,4 @@ class CarState(CarStateBase):
 
   @staticmethod
   def get_body_can_parser(CP):
-    if CP.enableBsm and CP.carFingerprint == CAR.CRV_5G:
-      signals = [("BSM_ALERT", "BSM_STATUS_RIGHT"),
-                 ("BSM_ALERT", "BSM_STATUS_LEFT")]
-
-      checks = [
-        ("BSM_STATUS_LEFT", 3),
-        ("BSM_STATUS_RIGHT", 3),
-      ]
-      bus_body = 0 # B-CAN is forwarded to ACC-CAN radar side (CAN 0 on fake ethernet port)
-      return CANParser(DBC[CP.carFingerprint]["body"], signals, checks, bus_body)
-    return None
+    return get_body_parser(CP)

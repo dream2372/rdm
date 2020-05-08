@@ -95,6 +95,19 @@ HUDData = namedtuple("HUDData",
                      ["pcm_accel", "v_cruise", "car",
                      "lanes", "fcw", "acc_alert", "steer_required"])
 
+# class BodyController():
+#   def __init__(self):
+#     raise Exception('BodyController: not implemented')
+#     # self.packer = CANPacker(dbc_name)
+#
+#   def update(self):
+#     # Send CAN commands. Not for use when onroad
+#     if not allowed():
+#       return None
+#     can_sends = []
+#     # do stuff
+#     return can_sends
+
 
 class CarController():
   def __init__(self, dbc_name, CP, VM):
@@ -103,7 +116,9 @@ class CarController():
     self.brake_last = 0.
     self.apply_brake_last = 0
     self.last_pump_ts = 0.
+
     self.packer = CANPacker(dbc_name)
+    self.packer_body = CANPacker(dbc_name)
 
     self.accel = 0
     self.speed = 0

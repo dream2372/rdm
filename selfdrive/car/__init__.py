@@ -105,7 +105,7 @@ def create_gas_interceptor_command(packer, gas_amount, idx):
 
   values = {
     "ENABLE": enable,
-    "COUNTER_PEDAL": idx & 0xF,
+    "COUNTER_COMMA": idx & 0xF,
   }
 
   if enable:
@@ -115,7 +115,7 @@ def create_gas_interceptor_command(packer, gas_amount, idx):
   dat = packer.make_can_msg("GAS_COMMAND", 0, values)[2]
 
   checksum = crc8_pedal(dat[:-1])
-  values["CHECKSUM_PEDAL"] = checksum
+  values["CHECKSUM_COMMA"] = checksum
 
   return packer.make_can_msg("GAS_COMMAND", 0, values)
 

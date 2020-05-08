@@ -87,6 +87,19 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
     });
   }
 
+  toggles.push_back({
+    "AF_TurnSignalControl",
+    "Automatic turn signal control",
+    "openpilot will control the car's turn signals during assisted lane changes. Manually initiate a lane change and then return the control stalk to the neutral position. openpilot will turn off the turn signal at the end of the lane change. Autofocuser body harness or equivalent is required.",
+    "../assets/offroad/icon_auto_turn_signal.png",
+  });
+  toggles.push_back({
+    "AF_OffroadCAN",
+    "Cloud control when the car is off",
+    "Control locks, lights, etc via the athena API. Body Harness or equivalent is required.",
+    "../assets/offroad/icon_cloud_unlock.png",
+  });
+
   for (auto &[param, title, desc, icon] : toggles) {
     auto toggle = new ParamControl(param, title, desc, icon, this);
     bool locked = params.getBool((param + "Lock").toStdString());

@@ -84,6 +84,10 @@ selfdrive/athena/athenad.py
 selfdrive/athena/manage_athenad.py
 selfdrive/athena/registration.py
 
+selfdrive/bodyd/lib/bodyd_helpers.py
+selfdrive/bodyd/test/test_bodyd.py
+selfdrive/bodyd/bodyd.py
+
 selfdrive/boardd/.gitignore
 selfdrive/boardd/SConscript
 selfdrive/boardd/__init__.py
@@ -117,7 +121,9 @@ selfdrive/car/chrysler/values.py
 selfdrive/car/chrysler/carcontroller.py
 selfdrive/car/chrysler/chryslercan.py
 selfdrive/car/honda/__init__.py
+selfdrive/car/honda/body.py
 selfdrive/car/honda/carstate.py
+selfdrive/car/honda/ioc.py
 selfdrive/car/honda/interface.py
 selfdrive/car/honda/radar_interface.py
 selfdrive/car/honda/values.py
@@ -496,6 +502,7 @@ rednose/**
 cereal/.gitignore
 cereal/__init__.py
 cereal/car.capnp
+cereal/body.capnp
 cereal/legacy.capnp
 cereal/log.capnp
 cereal/services.py
@@ -571,13 +578,13 @@ opendbc/honda_civic_touring_2016_can_generated.dbc
 opendbc/honda_civic_hatchback_ex_2017_can_generated.dbc
 opendbc/honda_crv_touring_2016_can_generated.dbc
 opendbc/honda_crv_ex_2017_can_generated.dbc
-opendbc/honda_crv_ex_2017_body_generated.dbc
 opendbc/honda_crv_executive_2016_can_generated.dbc
 opendbc/honda_fit_ex_2018_can_generated.dbc
 opendbc/honda_odyssey_exl_2018_generated.dbc
 opendbc/honda_odyssey_extreme_edition_2018_china_can_generated.dbc
 opendbc/honda_insight_ex_2019_can_generated.dbc
 opendbc/acura_ilx_2016_nidec.dbc
+opendbc/honda_body_2017.dbc
 
 opendbc/hyundai_kia_generic.dbc
 opendbc/hyundai_kia_mando_front_radar.dbc
