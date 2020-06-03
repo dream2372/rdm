@@ -70,6 +70,11 @@ TogglesPanel::TogglesPanel(QWidget *parent) : ListWidget(parent) {
                                   "In this mode openpilot will ignore lanelines and just drive how it thinks a human would.",
                                   "../assets/offroad/icon_road.png",
                                   this));
+  addItem(new ParamControl("TeslaRadarActivate",
+                                  "Enable Tesla Radar",
+                                  "Disables AEB! Use Tesla radar + vision for vehicle detection.",
+                                  "../assets/offroad/icon_road.png",
+                                  this));
 #ifdef ENABLE_MAPS
   addItem(new ParamControl("NavSettingTime24h",
                                   "Show ETA in 24h format",

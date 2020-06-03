@@ -4,9 +4,11 @@ from common.realtime import DT_CTRL
 from selfdrive.controls.lib.drive_helpers import rate_limit
 from common.numpy_fast import clip, interp
 from selfdrive.car import create_gas_command
-from selfdrive.car.honda import hondacan
+from selfdrive.car.honda import hondacan, teslaradarcan
 from selfdrive.car.honda.values import CruiseButtons, VISUAL_HUD, HONDA_BOSCH, HONDA_NIDEC_ALT_PCM_ACCEL, CarControllerParams
 from opendbc.can.packer import CANPacker
+from common.params import Params
+
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 LongCtrlState = car.CarControl.Actuators.LongControlState
@@ -104,6 +106,22 @@ class CarController():
     self.apply_brake_last = 0
     self.last_pump_ts = 0.
     self.packer = CANPacker(dbc_name)
+
+    # begin tesla radar
+    self.useTeslaRadar = Params().get_bool("TeslaRadarActivate")
+    if self.useTeslaRadar:
+      # info on this is available at https://tinkla.us/index.php/Tesla_Bosch_Radar
+      # must set the radar's VIN in /data/params/d/
+      self.radarVin = Params().get("TeslaRadarVin").decode()
+      if self.radarVin != "00000000000000000":
+        self.radarVin_idx = 0
+        self.radarPosition = Params().get("TeslaRadarPosition")
+        self.radarEpasType = Params().get("TeslaRadarEpasType")
+        self.radarBus = 0
+        self.radarTriggerMessage = 0x94
+      else:
+        self.useTeslaRadar = False
+    # end tesla radar
 
     self.params = CarControllerParams(CP)
 
@@ -243,7 +261,32 @@ class CarController():
 
     # Send dashboard UI commands.
     if (frame % 10) == 0:
+      # prints = True
+      # if prints:
+      #   print('braking:', end=' ')
+      #   print(bool(apply_accel <= -0.1), end=' ')
+      #   print('|', end= ' ')
+      #
+      #   print('accel:', end=' ')
+      #   print(round(apply_accel, 2), end = ' ')
+      #   print('|', end= ' ')
+      #
+      #   print('gas:', end=' ')
+      #   print(round(apply_gas, 2), end=' ')
+      #   print('|', end= ' ')
+      #
+      #   print('actuators:', end=' ')
+      #   print(round((actuators.gas - actuators.brake), 2), end=' ')
+      #   print('|', end =' ')
+      #
+      #   print('aEgo error', end =' ')
+      #   print(round(aTarget - CS.out.aEgo, 3))
       idx = (frame//10) % 4
       can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.is_metric, idx, CS.CP.openpilotLongitudinalControl, CS.stock_hud))
 
+    if self.useTeslaRadar:
+      if (frame % 100 == 0):
+        can_sends.append(teslaradarcan.create_radar_VIN_msg(self.radarVin_idx, str(self.radarVin), self.radarBus, self.radarTriggerMessage, self.useTeslaRadar, int(self.radarPosition), int(self.radarEpasType)))
+        self.radarVin_idx += 1
+        self.radarVin_idx = self.radarVin_idx % 3
     return can_sends

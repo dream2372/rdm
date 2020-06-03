@@ -7,6 +7,9 @@ from selfdrive.config import Conversions as CV
 # 2 = ACC-CAN - camera side
 # 3 = F-CAN A - OBDII port
 
+BOSCH_BRAKE_LIGHT_THRESHOLD = -0.1
+
+
 def get_pt_bus(car_fingerprint):
   return 1 if car_fingerprint in HONDA_BOSCH else 0
 
@@ -64,6 +67,7 @@ def create_acc_commands(packer, enabled, active, accel, gas, idx, stopping, star
     "BRAKE_REQUEST": braking,
     "STANDSTILL": standstill,
     "STANDSTILL_RELEASE": standstill_release,
+    "CMBS_OFF": 1, # for no AEB
   }
   commands.append(packer.make_can_msg("ACC_CONTROL", bus, acc_control_values, idx))
 
@@ -109,13 +113,18 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, 
       acc_hud_values = {
         'CRUISE_SPEED': hud.v_cruise,
         'ENABLE_MINI_CAR': 1,
-        'SET_TO_1': 1,
+        # TODO: set this back in opendbc
+        # 'SET_TO_1': 1,
         'HUD_LEAD': hud.car,
         'HUD_DISTANCE': 3,
         'ACC_ON': hud.car != 0,
         'SET_TO_X1': 1,
         'IMPERIAL_UNIT': int(not is_metric),
-        'FCM_OFF': 1,
+        #'FCM_OFF': 1, # check what bit this actually is in the dbc.
+        # TODO: which bits are for the indicator, hud nag, etc.
+        'FCM_OFF_1': 1,  # nag part 1/2
+        'FCM_OFF_2': 1,  # nag part 2/2
+        'FCM_OFF_3': 1,  # small hud icon
       }
     else:
       acc_hud_values = {

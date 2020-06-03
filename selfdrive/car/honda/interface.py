@@ -14,6 +14,8 @@ ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
 TransmissionType = car.CarParams.TransmissionType
 
+ALT_BRAKE_FLAG = 1
+BOSCH_LONG_FLAG = 2
 
 class CarInterface(CarInterfaceBase):
   @staticmethod
@@ -34,13 +36,19 @@ class CarInterface(CarInterfaceBase):
 
     if candidate in HONDA_BOSCH:
       ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.hondaBoschHarness)]
-      ret.radarOffCan = True
 
       # Disable the radar and let openpilot control longitudinal
       # WARNING: THIS DISABLES AEB!
-      ret.openpilotLongitudinalControl = Params().get_bool("DisableRadar")
+      useTeslaRadar = Params().get_bool("TeslaRadarActivate")
+      DisableRadar = Params().get_bool("DisableRadar")
+      ret.openpilotLongitudinalControl = DisableRadar or useTeslaRadar
+      if useTeslaRadar:
+        ret.radarTimeStep = 0.09
+
+      ret.radarOffCan = True if not useTeslaRadar else False
 
       ret.pcmCruise = not ret.openpilotLongitudinalControl
+
     else:
       ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.hondaNidec)]
       ret.enableGasInterceptor = 0x201 in fingerprint[0]
@@ -65,8 +73,19 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.pid.kf = 0.00006  # conservative feed-forward
 
     if candidate in HONDA_BOSCH:
-      ret.longitudinalTuning.kpV = [0.25]
-      ret.longitudinalTuning.kiV = [0.05]
+      if useTeslaRadar:
+        # tesla radar runs radard at ~8-10hz. compensate for this here
+        ret.longitudinalTuning.kpV = [0.5]
+        ret.longitudinalTuning.kiV = [0.10]
+        # # TODO: old tuning. keeping for now. cleanup
+        # ret.longitudinalTuning.kpBP = [0., 5., 35.]
+        # ret.longitudinalTuning.kpV = [0.6, 0.4, 0.25]
+        # ret.longitudinalTuning.kiBP = [0., 35.]
+        # ret.longitudinalTuning.kiV = [0.10, 0.05]
+
+      else:
+        ret.longitudinalTuning.kpV = [0.25]
+        ret.longitudinalTuning.kiV = [0.05]
       ret.longitudinalActuatorDelayUpperBound = 0.5 # s
     else:
       # default longitudinal tuning for all hondas
@@ -106,9 +125,19 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = CivicParams.WHEELBASE
       ret.centerToFront = CivicParams.CENTER_TO_FRONT
       ret.steerRatio = 15.38  # 10.93 is end-to-end spec
-      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
+      if eps_modified:
+        # stock request input values:     0x0000, 0x0067, 0x0107, 0x01CB, 0x0294, 0x035E, 0x0457, 0x060D, 0x06EE (STEER_CONFIG_INDEX: 1)
+        # stock request output values:    0x0000, 0x0380, 0x0800, 0x0C00, 0x0EB6, 0x10AE, 0x1200, 0x1200, 0x1200
+        # modified request output values: 0x0000, 0x0380, 0x0800, 0x0C00, 0x0EB6, 0x10AE, 0x1200, 0x1B00, 0x2D00
+        # stock filter output values:     0x00c0, 0x011a, 0x011a, 0x011a, 0x011a, 0x011a, 0x011a, 0x011a, 0x011a
+        # modified filter output values:  0x00c0, 0x011a, 0x011a, 0x011a, 0x011a, 0x011a, 0x011a, 0x0400, 0x0480
+        # note: max request allowed is 4096, but request is capped at 3840 in firmware, so modifications result in 2x max
+        ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2564, 8000], [0, 2564, 3840]]
+        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.4], [0.12]]
+      else:
+        ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2564], [0, 2564]]
+        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
       tire_stiffness_factor = 1.
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORDH):
       stop_and_go = True
@@ -327,7 +356,8 @@ class CarInterface(CarInterfaceBase):
 
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
 
-    ret.canValid = self.cp.can_valid and self.cp_cam.can_valid and (self.cp_body is None or self.cp_body.can_valid)
+    # ret.canValid = self.cp.can_valid and self.cp_cam.can_valid and (self.cp_body is None or self.cp_body.can_valid)
+    ret.canValid = self.cp.can_valid and (self.cp_body is None or self.cp_body.can_valid)
     ret.yawRate = self.VM.yaw_rate(ret.steeringAngleDeg * CV.DEG_TO_RAD, ret.vEgo)
 
     buttonEvents = []

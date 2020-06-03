@@ -468,6 +468,7 @@ FW_VERSIONS = {
       b'39990-TEZ-T020\x00\x00',
       b'39990-TGG-A020\x00\x00',
       b'39990-TGG-A120\x00\x00',
+      b'39990-TGG,A120\x00\x00', ## MODDED EPS
       b'39990-TGG-J510\x00\x00',
       b'39990-TGL-E130\x00\x00',
       b'39990-TGN-E120\x00\x00',
@@ -1265,18 +1266,18 @@ FW_VERSIONS = {
 }
 
 DBC = {
-  CAR.ACCORD: dbc_dict('honda_accord_2018_can_generated', None),
-  CAR.ACCORDH: dbc_dict('honda_accord_2018_can_generated', None),
+  CAR.ACCORD: dbc_dict('honda_accord_2018_can_generated', 'tesla_radar'),
+  CAR.ACCORDH: dbc_dict('honda_accord_2018_can_generated', 'tesla_radar'),
   CAR.ACURA_ILX: dbc_dict('acura_ilx_2016_can_generated', 'acura_ilx_2016_nidec'),
   CAR.ACURA_RDX: dbc_dict('acura_rdx_2018_can_generated', 'acura_ilx_2016_nidec'),
-  CAR.ACURA_RDX_3G: dbc_dict('acura_rdx_2020_can_generated', None),
+  CAR.ACURA_RDX_3G: dbc_dict('acura_rdx_2020_can_generated', 'tesla_radar'),
   CAR.CIVIC: dbc_dict('honda_civic_touring_2016_can_generated', 'acura_ilx_2016_nidec'),
-  CAR.CIVIC_BOSCH: dbc_dict('honda_civic_hatchback_ex_2017_can_generated', None),
-  CAR.CIVIC_BOSCH_DIESEL: dbc_dict('honda_civic_sedan_16_diesel_2019_can_generated', None),
+  CAR.CIVIC_BOSCH: dbc_dict('honda_civic_hatchback_ex_2017_can_generated', 'tesla_radar'),
+  CAR.CIVIC_BOSCH_DIESEL: dbc_dict('honda_civic_sedan_16_diesel_2019_can_generated', 'tesla_radar'),
   CAR.CRV: dbc_dict('honda_crv_touring_2016_can_generated', 'acura_ilx_2016_nidec'),
-  CAR.CRV_5G: dbc_dict('honda_crv_ex_2017_can_generated', None, body_dbc='honda_crv_ex_2017_body_generated'),
+  CAR.CRV_5G: dbc_dict('honda_crv_ex_2017_can_generated', 'tesla_radar', body_dbc='honda_crv_ex_2017_body_generated'),
   CAR.CRV_EU: dbc_dict('honda_crv_executive_2016_can_generated', 'acura_ilx_2016_nidec'),
-  CAR.CRV_HYBRID: dbc_dict('honda_crv_hybrid_2019_can_generated', None),
+  CAR.CRV_HYBRID: dbc_dict('honda_crv_hybrid_2019_can_generated', 'tesla_radar'),
   CAR.FIT: dbc_dict('honda_fit_ex_2018_can_generated', 'acura_ilx_2016_nidec'),
   CAR.FREED: dbc_dict('honda_fit_ex_2018_can_generated', 'acura_ilx_2016_nidec'),
   CAR.HRV: dbc_dict('honda_fit_ex_2018_can_generated', 'acura_ilx_2016_nidec'),
@@ -1285,8 +1286,8 @@ DBC = {
   CAR.PILOT: dbc_dict('honda_pilot_touring_2017_can_generated', 'acura_ilx_2016_nidec'),
   CAR.PILOT_2019: dbc_dict('honda_pilot_touring_2017_can_generated', 'acura_ilx_2016_nidec'),
   CAR.RIDGELINE: dbc_dict('honda_ridgeline_black_edition_2017_can_generated', 'acura_ilx_2016_nidec'),
-  CAR.INSIGHT: dbc_dict('honda_insight_ex_2019_can_generated', None),
-  CAR.HONDA_E: dbc_dict('acura_rdx_2020_can_generated', None),
+  CAR.INSIGHT: dbc_dict('honda_insight_ex_2019_can_generated', 'tesla_radar'),
+  CAR.HONDA_E: dbc_dict('acura_rdx_2020_can_generated', 'tesla_radar'),
 }
 
 STEER_THRESHOLD = {
