@@ -15,6 +15,8 @@ ButtonType = car.CarState.ButtonEvent.Type
 EventName = car.CarEvent.EventName
 TransmissionType = car.CarParams.TransmissionType
 
+ALT_BRAKE_FLAG = 1
+BOSCH_LONG_FLAG = 2
 
 def compute_gb_honda_bosch(accel, speed):
   return float(accel) / 3.5
@@ -125,6 +127,7 @@ class CarInterface(CarInterfaceBase):
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=[]):  # pylint: disable=dangerous-default-value
     ret = CarInterfaceBase.get_std_params(candidate, fingerprint)
     ret.carName = "honda"
+    ret.safetyParam = 0
 
     if candidate in HONDA_BOSCH:
       ret.safetyModel = car.CarParams.SafetyModel.hondaBoschHarness

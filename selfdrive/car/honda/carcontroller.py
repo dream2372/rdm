@@ -130,6 +130,22 @@ class CarController():
 
     # **** process the car messages ****
 
+    if CS.CP.carFingerprint in HONDA_BOSCH:
+      stopping = 0
+      starting = 0
+      accel = actuators.gas - actuators.brake
+      if accel < 0 and CS.out.vEgo < 0.3:
+        # prevent rolling backwards
+        stopping = 1
+        accel = -1.0
+      elif accel > 0 and CS.out.vEgo < 0.3:
+        starting = 1
+      apply_accel = interp(accel, BOSCH_ACCEL_LOOKUP_BP, BOSCH_ACCEL_LOOKUP_V)
+      apply_gas = interp(accel, BOSCH_GAS_LOOKUP_BP, BOSCH_GAS_LOOKUP_V)
+    else:
+      apply_gas = clip(actuators.gas, 0., 1.)
+      apply_brake = int(clip(self.brake_last * P.BRAKE_MAX, 0, P.BRAKE_MAX - 1))
+
     # steer torque is converted back to CAN reference (positive when steering right)
     apply_steer = int(interp(-actuators.steer * P.STEER_MAX, P.STEER_LOOKUP_BP, P.STEER_LOOKUP_V))
 
