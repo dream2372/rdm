@@ -231,8 +231,6 @@ class Controls:
     elif self.sm['lateralPlan'].laneChangeState in [LaneChangeState.laneChangeStarting,
                                                  LaneChangeState.laneChangeFinishing]:
       self.events.add(EventName.laneChange)
-      if self.sm['pathPlan'].laneChangeState in [LaneChangeState.laneChangeStarting:
-
 
     if self.can_rcv_error or not CS.canValid:
       self.events.add(EventName.canError)
@@ -321,7 +319,7 @@ class Controls:
       self.events.add(EventName.noTarget)
 
   def data_sample(self):
-    # """Receive data from sockets and update carState"""
+    """Receive data from sockets and update carState"""
 
     # Update carState from CAN
     can_strs = messaging.drain_sock_raw(self.can_sock, wait_for_one=True)
@@ -357,7 +355,7 @@ class Controls:
     return CS
 
   def state_transition(self, CS):
-    #"""Compute conditional state transitions and execute actions on state transitions"""
+    """Compute conditional state transitions and execute actions on state transitions"""
 
     self.v_cruise_kph_last = self.v_cruise_kph
 
@@ -434,7 +432,7 @@ class Controls:
     self.enabled = self.active or self.state == State.preEnabled
 
   def state_control(self, CS):
-    # """Given the state, this function returns an actuators packet"""
+    """Given the state, this function returns an actuators packet"""
 
     # Update VehicleModel
     params = self.sm['liveParameters']
