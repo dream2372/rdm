@@ -109,6 +109,11 @@ keys = {
   "Offroad_InvalidTime": [TxType.CLEAR_ON_MANAGER_START],
   "Offroad_IsTakingSnapshot": [TxType.CLEAR_ON_MANAGER_START],
   "Offroad_NeosUpdate": [TxType.CLEAR_ON_MANAGER_START],
+  # TODO: get the vin and config automagically on the first start. reset on manager start. see manager.py
+  "TeslaRadarVin": [TxType.PERSISTENT],
+  "TeslaRadarOffset": [TxType.PERSISTENT],
+  "TeslaRadarPosition": [TxType.PERSISTENT],
+  "TeslaRadarEpasType": [TxType.PERSISTENT],
 }
 
 
