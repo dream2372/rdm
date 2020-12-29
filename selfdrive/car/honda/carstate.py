@@ -264,6 +264,12 @@ class CarState(CarStateBase):
     ret.wheelSpeeds.rr = cp.vl["WHEEL_SPEEDS"]["WHEEL_SPEED_RR"] * CV.KPH_TO_MS * speed_factor
     v_wheel = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr)/4.
 
+    self.FL_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_FL']
+    self.FR_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_FR']
+    self.RL_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_RL']
+    self.RR_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_RR']
+    self.avg_wheelTick = (self.FL_wheelTick + self.FR_wheelTick + self.RL_wheelTick + self.RR_wheelTick) / 4.
+
     # blend in transmission speed at low speed, since it has more low speed accuracy
     v_weight = interp(v_wheel, v_weight_bp, v_weight_v)
     ret.vEgoRaw = (1. - v_weight) * cp.vl["ENGINE_DATA"]["XMISSION_SPEED"] * CV.KPH_TO_MS * speed_factor + v_weight * v_wheel
