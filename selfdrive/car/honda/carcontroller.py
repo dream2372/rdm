@@ -217,7 +217,7 @@ class CarController():
       print('gas:', end=' ')
       print(round(actuators.gas, 2), end = ' ')
       print('|', end= ' ')
-          
+
       print('brake:', end=' ')
       print(round(actuators.brake, 2), end=' ')
       print('|', end= ' ')
