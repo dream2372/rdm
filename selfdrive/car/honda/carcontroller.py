@@ -110,7 +110,7 @@ class CarController():
 
   def update(self, enabled, CS, frame, actuators,
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel,
-             hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert):
+             hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert, a_acc):
 
     P = self.params
 
@@ -153,7 +153,7 @@ class CarController():
     if CS.CP.carFingerprint in HONDA_BOSCH:
       stopped = 0
       starting = 0
-      accel = actuators.gas - actuators.brake
+      accel = a_acc
       # go to standstill if desired
       if accel < 0 and CS.out.vEgo <= 0.1:
         # after 6 readings of the same avg wheel tick signal, set standstill
@@ -167,7 +167,7 @@ class CarController():
             stopped = 1
             # go to full brake after 1 second of standstill
             if (frame - self.stopped_frame) >= 100:
-              accel = -1.0
+              accel = -3.5
         # wheeltick changed since last loop. no standstill
         else:
           self.last_wheeltick = CS.avg_wheelTick
@@ -176,7 +176,7 @@ class CarController():
       # release standstill
       if accel >= 0 and (0.3 >= CS.out.vEgo >= 0):
         starting = 1
-      apply_accel = interp(accel, BOSCH_ACCEL_LOOKUP_BP, BOSCH_ACCEL_LOOKUP_V)
+      # apply_accel = interp(accel, BOSCH_ACCEL_LOOKUP_BP, BOSCH_ACCEL_LOOKUP_V)
       apply_gas = interp(accel, BOSCH_GAS_LOOKUP_BP, BOSCH_GAS_LOOKUP_V)
     else:
       apply_gas = clip(actuators.gas, 0., 1.)
@@ -207,15 +207,15 @@ class CarController():
       print('|', end= ' ')
 
       print('max_brake:', end=' ')
-      print(bool(accel == -1.0), end= ' ')
+      print(bool(accel == -3.5), end= ' ')
       print('|', end= ' ')
 
-      print('accel:', end=' ')
+      print('a_acc:', end=' ')
       print(round(accel, 2), end = ' ')
       print('|', end= ' ')
 
-      print('apply_accel:', end=' ')
-      print(round(apply_accel, 2), end=' ')
+      print('gas:', end=' ')
+      print(round(apply_gas, 2), end=' ')
       print('|', end= ' ')
 
       print('stopped:', end=' ')
