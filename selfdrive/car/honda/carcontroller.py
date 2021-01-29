@@ -12,8 +12,8 @@ from common.params import Params
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 
-BOSCH_ACCEL_LOOKUP_BP = [-1., 0., 0.6]
-BOSCH_ACCEL_LOOKUP_V = [-3.5, 0., 2.]
+BOSCH_ACCEL_MAX = 2.
+BOSCH_ACCEL_MIN = -3.5
 BOSCH_GAS_LOOKUP_BP = [0., 0.6]
 BOSCH_GAS_LOOKUP_V = [0, 2000]
 
@@ -114,7 +114,7 @@ class CarController():
 
   def update(self, enabled, CS, frame, actuators,
              pcm_speed, pcm_override, pcm_cancel_cmd, pcm_accel,
-             hud_v_cruise, hud_show_lanes, hud_show_car, hud_alert):
+             hud_v_cruise, hud_show_lanes, aTarget, hud_show_car, hud_alert):
 
     P = self.params
 
@@ -153,9 +153,10 @@ class CarController():
     if CS.CP.carFingerprint in HONDA_BOSCH:
       stopped = 0
       starting = 0
-      accel = actuators.gas - actuators.brake
+      accel = aTarget  # not from PID
+
       # go to standstill if desired
-      if accel < 0 and CS.out.vEgo <= 0.1:
+      if accel < 0. and CS.out.vEgo <= 0.1:
         # after 6 readings of the same avg wheel tick signal, set standstill
         if CS.avg_wheelTick == self.last_wheeltick:
           self.last_wheeltick_ct += 1
@@ -167,17 +168,19 @@ class CarController():
             stopped = 1
             # go to full brake after 1 second of standstill
             if (frame - self.stopped_frame) >= 100:
-              accel = -1.0
+              accel = -3.5
+
         # wheeltick changed since last loop. no standstill
         else:
           self.last_wheeltick = CS.avg_wheelTick
           self.last_wheeltick_ct = 0
           self.stopped_frame = 0
+
       # release standstill
-      if accel >= 0 and (0.3 >= CS.out.vEgo >= 0):
+      if accel >= 0. and (0.3 >= CS.out.vEgo >= 0):
         starting = 1
-      apply_accel = interp(accel, BOSCH_ACCEL_LOOKUP_BP, BOSCH_ACCEL_LOOKUP_V)
-      apply_gas = interp(accel, BOSCH_GAS_LOOKUP_BP, BOSCH_GAS_LOOKUP_V)
+      apply_accel = clip(accel, BOSCH_ACCEL_MIN, BOSCH_ACCEL_MAX)
+      apply_gas = interp(actuators.gas, BOSCH_GAS_LOOKUP_BP, BOSCH_GAS_LOOKUP_V)
     else:
       apply_gas = clip(actuators.gas, 0., 1.)
       apply_brake = int(clip(self.brake_last * P.BRAKE_MAX, 0, P.BRAKE_MAX - 1))
@@ -204,9 +207,9 @@ class CarController():
 
     # Send dashboard UI commands.
     if (frame % 10) == 0:
-      print('braking:', end=' ')
-      print(bool(accel < -0.06), end=' ')
-      print('|', end= ' ')
+      # print('braking:', end=' ')
+      # print(bool(accel < -0.06), end=' ')
+      # print('|', end= ' ')
 
       print('max_brake:', end=' ')
       print(bool(accel == -1.0), end= ' ')
