@@ -211,16 +211,16 @@ class CarController():
       # print(bool(accel < -0.06), end=' ')
       # print('|', end= ' ')
 
+      print('accel:', end=' ')
+      print(round(apply_accel, 2), end = ' ')
+      print('|', end= ' ')
+
+      print('gas:', end=' ')
+      print(round(apply_gas, 2), end=' ')
+      print('|', end= ' ')
+
       print('max_brake:', end=' ')
       print(bool(accel == -1.0), end= ' ')
-      print('|', end= ' ')
-
-      print('accel:', end=' ')
-      print(round(accel, 2), end = ' ')
-      print('|', end= ' ')
-
-      print('apply_accel:', end=' ')
-      print(round(apply_accel, 2), end=' ')
       print('|', end= ' ')
 
       print('stopped:', end=' ')
