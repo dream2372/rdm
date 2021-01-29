@@ -228,6 +228,7 @@ class CarState(CarStateBase):
     ret.wheelSpeeds.rr = cp.vl["WHEEL_SPEEDS"]['WHEEL_SPEED_RR'] * CV.KPH_TO_MS * speed_factor
     v_wheel = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr)/4.
 
+    # todo: calculate speed based on tire size and blend in below
     self.FL_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_FL']
     self.FR_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_FR']
     self.RL_wheelTick = cp.vl["WHEEL_TICKS"]['WHEEL_TICK_RL']
