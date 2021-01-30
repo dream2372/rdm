@@ -180,7 +180,7 @@ class CarController():
       if accel >= 0. and (0.3 >= CS.out.vEgo >= 0):
         starting = 1
       apply_accel = clip(accel, BOSCH_ACCEL_MIN, BOSCH_ACCEL_MAX)
-      apply_gas = interp(actuators.gas, BOSCH_GAS_LOOKUP_BP, BOSCH_GAS_LOOKUP_V)
+      apply_gas = int(interp(actuators.gas, BOSCH_GAS_LOOKUP_BP, BOSCH_GAS_LOOKUP_V))
     else:
       apply_gas = clip(actuators.gas, 0., 1.)
       apply_brake = int(clip(self.brake_last * P.BRAKE_MAX, 0, P.BRAKE_MAX - 1))
