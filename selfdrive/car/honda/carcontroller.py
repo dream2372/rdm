@@ -94,7 +94,7 @@ class CarController():
     self.stopped_frame = 0
     self.last_wheeltick = 0
     self.last_wheeltick_ct = 0
-    self.cnter = 0
+    self.cnter = 1
 
     # begin tesla radar
     p = Params()
@@ -263,9 +263,9 @@ class CarController():
     if self.useTeslaRadar:
 
       if (frame % 100 == 0):
-        self.cnter += 1
-        if (self.cnter % 256 == 0):
-          self.cnter = 0
+        self.cnter <<= 1
+        if self.cnter >= 0x800000:
+          self.cnter = 1
 
         print(self.cnter)
 
