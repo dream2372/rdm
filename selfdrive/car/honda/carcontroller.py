@@ -94,6 +94,7 @@ class CarController():
     self.stopped_frame = 0
     self.last_wheeltick = 0
     self.last_wheeltick_ct = 0
+    self.cnter = 0
 
     # begin tesla radar
     p = Params()
@@ -227,7 +228,7 @@ class CarController():
       print(bool(stopped))
 
       idx = (frame//10) % 4
-      can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.is_metric, idx, CS.CP.openpilotLongitudinalControl, CS.stock_hud))
+      can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.is_metric, idx, CS.CP.openpilotLongitudinalControl, CS.stock_hud, self.cnter))
 
     if not CS.CP.openpilotLongitudinalControl:
       if (frame % 2) == 0:
@@ -260,7 +261,14 @@ class CarController():
             can_sends.append(create_gas_command(self.packer, apply_gas, idx))
 
     if self.useTeslaRadar:
+
       if (frame % 100 == 0):
+        self.cnter += 1
+        if (self.cnter % 256 == 0):
+          self.cnter = 0
+
+        print(self.cnter)
+
         can_sends.append(teslaradarcan.create_radar_VIN_msg(self.radarVin_idx, str(self.radarVin), self.radarBus, self.radarTriggerMessage, self.useTeslaRadar, int(self.radarPosition), int(self.radarEpasType)))
         self.radarVin_idx += 1
         self.radarVin_idx = self.radarVin_idx % 3
