@@ -139,6 +139,7 @@ class Controls:
     self.active = False
     self.can_rcv_error = False
     self.soft_disable_timer = 0
+    self.a_out = 0.
     self.v_cruise_kph = 255
     self.v_cruise_kph_last = 0
     self.mismatch_counter = 0
@@ -563,7 +564,7 @@ class Controls:
 
     if not self.read_only and self.initialized:
       # send car controls over can
-      can_sends = self.CI.apply(CC)
+      can_sends = self.CI.apply(CC, self.a_out)
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
 
     force_decel = (self.sm['driverMonitoringState'].awarenessStatus < 0.) or \
