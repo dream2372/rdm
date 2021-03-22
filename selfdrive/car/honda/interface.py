@@ -132,11 +132,14 @@ class CarInterface(CarInterfaceBase):
 
     if candidate in HONDA_BOSCH:
       ret.safetyModel = car.CarParams.SafetyModel.hondaBoschHarness
-      ret.radarOffCan = True
 
       # Disable the radar and let openpilot control longitudinal
       # WARNING: THIS DISABLES AEB!
-      ret.openpilotLongitudinalControl = Params().get_bool("DisableRadar")
+      DisableRadar = Params().get_bool("DisableRadar")
+      UseTeslaRadar = Params().get_bool("TeslaRadarActivate")
+      ret.radarOffCan = not useTeslaRadar
+      ret.openpilotLongitudinalControl = DisableRadar or UseTeslaRadar
+      ret.radarTimeStep = 0.09 if useTeslaRadar else 0.05
 
       ret.pcmCruise = not ret.openpilotLongitudinalControl
       ret.communityFeature = ret.openpilotLongitudinalControl
@@ -163,7 +166,7 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
     ret.lateralTuning.pid.kf = 0.00006  # conservative feed-forward
 
-    eps_modified = False
+    eps_modified = True
     for fw in car_fw:
       if fw.ecu == "eps" and b"," in fw.fwVersion:
         eps_modified = True
@@ -212,10 +215,17 @@ class CarInterface(CarInterfaceBase):
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2564], [0, 2564]]
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
       tire_stiffness_factor = 1.
-      ret.longitudinalTuning.kpBP = [0., 5., 35.]
-      ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
-      ret.longitudinalTuning.kiBP = [0., 35.]
-      ret.longitudinalTuning.kiV = [0.18, 0.12]
+      # tesla radar runs radard at about 10 hz. compensate for this here
+      if useTeslaRadar:
+        ret.longitudinalTuning.kpBP = [0., 5., 35.]
+        ret.longitudinalTuning.kpV = [2.0, 1.2, 0.6]
+        ret.longitudinalTuning.kiBP = [0., 35.]
+        ret.longitudinalTuning.kiV = [0.15, 0.05]
+      else:
+        ret.longitudinalTuning.kpBP = [0., 5., 35.]
+        ret.longitudinalTuning.kpV = [1.2, 0.8, 0.5]
+        ret.longitudinalTuning.kiBP = [0., 35.]
+        ret.longitudinalTuning.kiV = [0.18, 0.12]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORDH):
       stop_and_go = True
@@ -453,11 +463,15 @@ class CarInterface(CarInterfaceBase):
       ret.gasMaxV = [0.6]
       ret.brakeMaxBP = [0.]  # m/s
       ret.brakeMaxV = [1.]   # max brake allowed, 3.5m/s^2
+      ret.startAccel = 0.3
+      ret.longitudinalTuning.deadzoneBP = [0., 8.05]
+      ret.longitudinalTuning.deadzoneV = [.0, .14]
     else:
       ret.gasMaxBP = [0.]  # m/s
       ret.gasMaxV = [0.6] if ret.enableGasInterceptor else [0.]  # max gas allowed
       ret.brakeMaxBP = [5., 20.]  # m/s
       ret.brakeMaxV = [1., 0.8]   # max brake allowed
+      ret.startAccel = 0.5
 
     ret.startAccel = 0.5
     ret.stoppingControl = True
