@@ -14,7 +14,7 @@ EXT_DIAG_REQUEST = b'\x10\x03'
 EXT_DIAG_RESPONSE = b'\x50\x03'
 COM_CONT_REQUEST = b'\x28\x83\x03'
 COM_CONT_RESPONSE = b''
-BOSCH_BRAKE_LIGHT_THRESHOLD = -0.1
+BOSCH_BRAKE_LIGHT_THRESHOLD = -0.35
 
 
 def get_pt_bus(car_fingerprint):
@@ -80,10 +80,10 @@ def create_acc_commands(packer, enabled, active, accel, gas, idx, stopped, start
   commands = []
   bus = get_pt_bus(car_fingerprint)
   control_on = 5 if enabled else 0
-  # no gas = -30000
-  gas_command = gas if active and accel >= -0.0 else -30000
   accel_command = accel if active else 0.
   braking = 1 if active and accel <= BOSCH_BRAKE_LIGHT_THRESHOLD else 0
+  # no gas = -30000
+  gas_command = gas if active and not braking else -30000
   standstill = 1 if active and stopped else 0
   standstill_release = 1 if active and starting else 0
 
