@@ -5,10 +5,10 @@ from selfdrive.body.lib.bodyd_helpers import dbc_dict
 # See > https://github.com/csouers/bodyharness/wiki/Data-Collection#window-lock-and-door-capture---instructions
 
 class CAR:
-  ACCORD = "HONDA ACCORD 2018 SPORT 2T"
-  ACCORD_15 = "HONDA ACCORD 2018 LX 1.5T"
-  CIVIC_BOSCH = 'HONDA CIVIC HATCHBACK 2017 SEDAN/COUPE 2019'
-  CIVIC_BOSCH_DIESEL = "HONDA CIVIC SEDAN 1.6 DIESEL"
+  ACCORD = "HONDA ACCORD 2T 2018"
+  ACCORD_15 = "HONDA ACCORD 1.5T 2018"
+  CIVIC_BOSCH = "HONDA CIVIC (BOSCH) 2019"
+  CIVIC_BOSCH_DIESEL = "HONDA CIVIC SEDAN 1.6 DIESEL 2019"
 
 
 # id, time (0), data, bus
