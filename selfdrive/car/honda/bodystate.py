@@ -34,7 +34,17 @@ def get_body_signals(CP):
     signals += [('SUNROOF_CLOSED', 'FRONT_WINDOWS', 0)]
 
   # check for gateway heartbeat?
-  checks = []
+  # the 0 is a hack
+  checks = [
+          ("LEFT_DOORS", 0),
+          ("RIGHT_DOORS", 0),
+          ("TRUNK_2", 0),
+          ("LF_DOOR", 0),
+          ("RF_DOOR", 0),
+          ("LR_DOOR", 0),
+          ("RR_DOOR", 0),
+          ("FRONT_WINDOWS", 0),
+  ]
 
   return signals, checks
 
