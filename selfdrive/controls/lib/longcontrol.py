@@ -6,7 +6,7 @@ from selfdrive.modeld.constants import T_IDXS
 
 LongCtrlState = log.ControlsState.LongControlState
 
-STOPPING_EGO_SPEED = 1.5  # Honda Bosch loses braking control near 1 m/s
+STOPPING_EGO_SPEED = 1.0  # Honda Bosch loses braking control near 1 m/s
 STOPPING_TARGET_SPEED_OFFSET = 0.01
 STARTING_TARGET_SPEED = 0.5
 BRAKE_THRESHOLD_TO_PID = 0.2
