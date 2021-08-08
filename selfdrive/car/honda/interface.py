@@ -19,7 +19,12 @@ ALT_BRAKE_FLAG = 1
 BOSCH_LONG_FLAG = 2
 
 def compute_gb_honda_bosch(accel, speed):
-  return float(accel) / 7.0
+  creep_brake = 0.0
+  creep_speed = 2.3
+  creep_brake_value = 0.15
+  if speed < creep_speed:
+    creep_brake = (creep_speed - speed) / creep_speed * creep_brake_value
+  return float(accel) / 4.8 - creep_brake
 
 
 def compute_gb_honda_nidec(accel, speed):
@@ -91,35 +96,35 @@ class CarInterface(CarInterfaceBase):
   def compute_gb(accel, speed): # pylint: disable=method-hidden
     raise NotImplementedError
 
-  # @staticmethod
-  # def calc_accel_override(a_ego, a_target, v_ego, v_target):
+  @staticmethod
+  def calc_accel_override(a_ego, a_target, v_ego, v_target):
 
-  #   # normalized max accel. Allowing max accel at low speed causes speed overshoots
-  #   max_accel_bp = [10, 20]    # m/s
-  #   max_accel_v = [0.714, 1.0]  # unit of max accel
-  #   max_accel = interp(v_ego, max_accel_bp, max_accel_v)
+    # normalized max accel. Allowing max accel at low speed causes speed overshoots
+    max_accel_bp = [10, 20]    # m/s
+    max_accel_v = [0.714, 1.0]  # unit of max accel
+    max_accel = interp(v_ego, max_accel_bp, max_accel_v)
 
-  #   # limit the pcm accel cmd if:
-  #   # - v_ego exceeds v_target, or
-  #   # - a_ego exceeds a_target and v_ego is close to v_target
+    # limit the pcm accel cmd if:
+    # - v_ego exceeds v_target, or
+    # - a_ego exceeds a_target and v_ego is close to v_target
 
-  #   eA = a_ego - a_target
-  #   valuesA = [1.0, 0.1]
-  #   bpA = [0.3, 1.1]
+    eA = a_ego - a_target
+    valuesA = [1.0, 0.1]
+    bpA = [0.3, 1.1]
 
-  #   eV = v_ego - v_target
-  #   valuesV = [1.0, 0.1]
-  #   bpV = [0.0, 0.5]
+    eV = v_ego - v_target
+    valuesV = [1.0, 0.1]
+    bpV = [0.0, 0.5]
 
-  #   valuesRangeV = [1., 0.]
-  #   bpRangeV = [-1., 0.]
+    valuesRangeV = [1., 0.]
+    bpRangeV = [-1., 0.]
 
-  #   # only limit if v_ego is close to v_target
-  #   speedLimiter = interp(eV, bpV, valuesV)
-  #   accelLimiter = max(interp(eA, bpA, valuesA), interp(eV, bpRangeV, valuesRangeV))
+    # only limit if v_ego is close to v_target
+    speedLimiter = interp(eV, bpV, valuesV)
+    accelLimiter = max(interp(eA, bpA, valuesA), interp(eV, bpRangeV, valuesRangeV))
 
-  #   # accelOverride is more or less the max throttle allowed to pcm: usually set to a constant
-  #   # unless aTargetMax is very high and then we scale with it; this help in quicker restart
+    # accelOverride is more or less the max throttle allowed to pcm: usually set to a constant
+    # unless aTargetMax is very high and then we scale with it; this help in quicker restart
 
     return float(max(max_accel, a_target / CarControllerParams.ACCEL_MAX)) * min(speedLimiter, accelLimiter)
 
@@ -127,8 +132,6 @@ class CarInterface(CarInterfaceBase):
   def get_params(candidate, fingerprint=gen_empty_fingerprint(), car_fw=[]):  # pylint: disable=dangerous-default-value
     ret = CarInterfaceBase.get_std_params(candidate, fingerprint)
     ret.carName = "honda"
-    ret.safetyParam = 0
-    params = Params()
 
     if candidate in HONDA_BOSCH:
       ret.safetyModel = car.CarParams.SafetyModel.hondaBoschHarness
@@ -218,7 +221,7 @@ class CarInterface(CarInterfaceBase):
       # tesla radar runs radard at about 10 hz. compensate for this here
       if useTeslaRadar:
         ret.longitudinalTuning.kpBP = [0., 5., 35.]
-        ret.longitudinalTuning.kpV = [0.8, 0.8, 0.8]
+        ret.longitudinalTuning.kpV = [0.6, 0.4, 0.25]
         ret.longitudinalTuning.kiBP = [0., 35.]
         ret.longitudinalTuning.kiV = [0.10, 0.05]
       else:
@@ -464,8 +467,7 @@ class CarInterface(CarInterfaceBase):
       ret.brakeMaxBP = [0.]  # m/s
       ret.brakeMaxV = [1.]   # max brake allowed, 3.5m/s^2
       ret.startAccel = 0.25
-      ret.stoppingBrakeRate = 0.1 # reach stopping target smoothly
-      ret.startAccel = 0.3
+      ret.stoppingBrakeRate = 0.05 # reach stopping target smoothly
       ret.longitudinalTuning.deadzoneBP = [0., 8.05]
       ret.longitudinalTuning.deadzoneV = [.0, .10]
     else:
@@ -475,7 +477,6 @@ class CarInterface(CarInterfaceBase):
       ret.brakeMaxV = [1., 0.8]   # max brake allowed
       ret.startAccel = 0.5
 
-    ret.startAccel = 0.5
     ret.stoppingControl = True
 
     ret.steerActuatorDelay = 0.1
@@ -585,7 +586,7 @@ class CarInterface(CarInterfaceBase):
 
   # pass in a car.CarControl
   # to be called @ 100hz
-  def apply(self, c, atarget):
+  def apply(self, c):
     if c.hudControl.speedVisible:
       hud_v_cruise = c.hudControl.setSpeed * CV.MS_TO_KPH
     else:
@@ -595,7 +596,6 @@ class CarInterface(CarInterfaceBase):
 
     can_sends = self.CC.update(c.enabled, c.active, self.CS, self.frame,
                                c.actuators,
-                               atarget,
                                c.cruiseControl.speedOverride,
                                c.cruiseControl.override,
                                c.cruiseControl.cancel,

@@ -36,7 +36,6 @@ def manager_init():
     ("CompletedTrainingVersion", "0"),
     ("HasAcceptedTerms", "0"),
     ("OpenpilotEnabledToggle", "1"),
-    ("VisionRadarToggle", "0"),
     ("TeslaRadarActivate", "1"),
     ("TeslaRadarVin", "5YJSA1H24EFP54660"),
     ("TeslaRadarPosition", "0"),
@@ -156,7 +155,7 @@ def manager_thread():
 
     running_list = ["%s%s\u001b[0m" % ("\u001b[32m" if p.proc.is_alive() else "\u001b[31m", p.name)
                     for p in managed_processes.values() if p.proc]
-    #cloudlog.debug(' '.join(running_list))
+    cloudlog.debug(' '.join(running_list))
 
     # send managerState
     msg = messaging.new_message('managerState')

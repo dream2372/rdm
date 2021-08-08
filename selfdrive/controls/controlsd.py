@@ -11,8 +11,6 @@ from selfdrive.config import Conversions as CV
 from selfdrive.swaglog import cloudlog
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.car.car_helpers import get_car, get_startup_event, get_one_can
-# TODO: import this only if we don't have tesla radar
-# from selfdrive.car.disable_radar import disable_radar
 from selfdrive.controls.lib.lane_planner import CAMERA_OFFSET
 from selfdrive.controls.lib.drive_helpers import update_v_cruise, initialize_v_cruise
 from selfdrive.controls.lib.drive_helpers import get_lag_adjusted_curvature
@@ -113,9 +111,6 @@ class Controls:
     cp_bytes = self.CP.to_bytes()
     params.put("CarParams", cp_bytes)
     put_nonblocking("CarParamsCache", cp_bytes)
-    # TODO: don't sent this if we have tesla radar
-    # if self.CP.openpilotLongitudinalControl and self.CP.safetyModel in [car.CarParams.SafetyModel.hondaBoschGiraffe, car.CarParams.SafetyModel.hondaBoschHarness]:
-    #   disable_radar(self.can_sock, self.pm.sock['sendcan'], 1 if has_relay else 0, timeout=1, retry=10)
 
     self.CC = car.CarControl.new_message()
     self.AM = AlertManager()
@@ -139,7 +134,6 @@ class Controls:
     self.active = False
     self.can_rcv_error = False
     self.soft_disable_timer = 0
-    self.a_out = 0.
     self.v_cruise_kph = 255
     self.v_cruise_kph_last = 0
     self.mismatch_counter = 0
@@ -565,7 +559,7 @@ class Controls:
 
     if not self.read_only and self.initialized:
       # send car controls over can
-      can_sends = self.CI.apply(CC, self.a_out)
+      can_sends = self.CI.apply(CC)
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=CS.canValid))
 
     force_decel = (self.sm['driverMonitoringState'].awarenessStatus < 0.) or \

@@ -83,20 +83,20 @@ def create_acc_commands(packer, enabled, active, accel, gas, idx, stopped, start
   accel_command = accel if active else 0.
   braking = 1 if active and accel <= BOSCH_BRAKE_LIGHT_THRESHOLD else 0
   # no gas = -30000
-  gas_command = gas if active and not braking else -30000
+  gas_command = gas if active and gas > 0 else -30000
   standstill = 1 if active and stopped else 0
   standstill_release = 1 if active and starting else 0
 
   acc_control_values = {
     # setting CONTROL_ON causes car to set POWERTRAIN_DATA->ACC_STATUS = 1
     "CONTROL_ON": control_on,
-    "GAS_COMMAND": gas_command,  # used for gas
-    "ACCEL_COMMAND": accel_command,  # used for brakes
+    "GAS_COMMAND": gas_command, # used for gas
+    "ACCEL_COMMAND": accel_command, # used for brakes
     "BRAKE_LIGHTS": braking,
     "BRAKE_REQUEST": braking,
     "STANDSTILL": standstill,
     "STANDSTILL_RELEASE": standstill_release,
-    "CMBS_OFF": 1,  # for no AEB
+    "CMBS_OFF": 1, # for no AEB
   }
   commands.append(packer.make_can_msg("ACC_CONTROL", bus, acc_control_values, idx))
 
@@ -110,7 +110,6 @@ def create_acc_commands(packer, enabled, active, accel, gas, idx, stopped, start
   commands.append(packer.make_can_msg("ACC_CONTROL_ON", bus, acc_control_on_values, idx))
 
   return commands
-
 
 def create_steering_control(packer, apply_steer, lkas_active, car_fingerprint, idx, radar_disabled):
   values = {
