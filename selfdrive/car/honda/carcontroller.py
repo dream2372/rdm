@@ -8,7 +8,6 @@ from selfdrive.car.honda import hondacan, teslaradarcan
 from selfdrive.car.honda.values import CruiseButtons, CAR, VISUAL_HUD, HONDA_BOSCH, CarControllerParams
 from opendbc.can.packer import CANPacker
 from common.params import Params
-import cereal.messaging as messaging
 
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
