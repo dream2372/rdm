@@ -139,9 +139,9 @@ class CarInterface(CarInterfaceBase):
       # Disable the radar and let openpilot control longitudinal
       # WARNING: THIS DISABLES AEB!
       DisableRadar = Params().get_bool("DisableRadar")
-      UseTeslaRadar = Params().get_bool("TeslaRadarActivate")
+      useTeslaRadar = Params().get_bool("TeslaRadarActivate")
       ret.radarOffCan = not useTeslaRadar
-      ret.openpilotLongitudinalControl = DisableRadar or UseTeslaRadar
+      ret.openpilotLongitudinalControl = DisableRadar or useTeslaRadar
       ret.radarTimeStep = 0.09 if useTeslaRadar else 0.05
 
       ret.pcmCruise = not ret.openpilotLongitudinalControl
