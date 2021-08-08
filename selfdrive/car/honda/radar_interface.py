@@ -77,8 +77,7 @@ def _create_tesla_can_parser(car_fingerprint):
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     super().__init__(CP)
-    params = Params()
-    use_tesla = params.get("TeslaRadarActivate")
+    use_tesla = Params().get_bool("TeslaRadarActivate")
     self.pts = {}
     self.delay = int(round(0.1 / CP.radarTimeStep)) # 0.1s delay of radar
     self.updated_messages = set()
@@ -95,7 +94,7 @@ class RadarInterface(RadarInterfaceBase):
       if use_tesla:
         self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
         self.rcp = _create_tesla_can_parser(CP.carFingerprint)
-        self.radarOffset = float(params.get("TeslaRadarOffset"))
+        self.radarOffset = float(Params().get("TeslaRadarOffset"))
         self.trackId = 1
         self.trigger_start_msg = RADAR_A_MSGS[0]
         self.trigger_end_msg = RADAR_B_MSGS[-1]
