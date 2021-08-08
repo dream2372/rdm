@@ -220,7 +220,7 @@ class CarController():
 
           apply_accel = interp(accel, P.BOSCH_ACCEL_LOOKUP_BP, P.BOSCH_ACCEL_LOOKUP_V)
           apply_gas = interp(accel, P.BOSCH_GAS_LOOKUP_BP, P.BOSCH_GAS_LOOKUP_V)
-          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, apply_accel, apply_gas, idx, stopping, starting, CS.CP.carFingerprint))
+          can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, active, apply_accel, apply_gas, idx, stopping, starting, CS.CP.carFingerprint))
 
         else:
           apply_gas = clip(actuators.gas, 0., 1.)
