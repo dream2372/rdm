@@ -214,10 +214,6 @@ class CarController():
           stopping = accel < 0 and CS.out.vEgo < 0.3
           starting = accel > 0 and CS.out.vEgo < 0.3
 
-          # Prevent rolling backwards
-          # this is too harsh. Just change it in longcontrol.py?
-          # accel = -1.0 if stopping else accel
-
           apply_accel = interp(accel, P.BOSCH_ACCEL_LOOKUP_BP, P.BOSCH_ACCEL_LOOKUP_V)
           apply_gas = interp(accel, P.BOSCH_GAS_LOOKUP_BP, P.BOSCH_GAS_LOOKUP_V)
           can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, active, apply_accel, apply_gas, idx, stopping, starting, CS.CP.carFingerprint))
