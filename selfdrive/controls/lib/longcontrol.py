@@ -11,8 +11,6 @@ STOPPING_TARGET_SPEED_OFFSET = 0.01
 STARTING_TARGET_SPEED = 0.5
 BRAKE_THRESHOLD_TO_PID = 0.2
 
-BRAKE_STOPPING_TARGET = 1.0 # 0.5  # apply at least this amount of brake to maintain the vehicle stationary
-
 RATE = 100.0
 DEFAULT_LONG_LAG = 0.15
 
@@ -117,7 +115,7 @@ class LongControl():
     # Intention is to stop, switch to a different brake control until we stop
     elif self.long_control_state == LongCtrlState.stopping:
       # Keep applying brakes until the car is stopped
-      if not CS.standstill or output_gb > -BRAKE_STOPPING_TARGET:
+      if not CS.standstill or output_gb > -CP.brakeStoppingTarget:
         output_gb -= CP.stoppingBrakeRate / RATE
       output_gb = clip(output_gb, -brake_max, gas_max)
 

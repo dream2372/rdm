@@ -76,6 +76,7 @@ class CarInterfaceBase():
     ret.gasMaxV = [.5]       # half max brake
     ret.brakeMaxBP = [0.]
     ret.brakeMaxV = [1.]
+    ret.brakeStoppingTarget = 0.5 # apply this much braking to hold the vehicle stationary
     ret.openpilotLongitudinalControl = False
     ret.startAccel = 0.0
     ret.minSpeedCan = 0.3

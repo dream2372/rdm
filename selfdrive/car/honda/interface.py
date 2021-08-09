@@ -135,6 +135,7 @@ class CarInterface(CarInterfaceBase):
 
     if candidate in HONDA_BOSCH:
       ret.safetyModel = car.CarParams.SafetyModel.hondaBoschHarness
+      ret.brakeStoppingTarget = 1.0 # [0 - 1] amount of braking to apply at standstill
 
       # Disable the radar and let openpilot control longitudinal
       # WARNING: THIS DISABLES AEB!
