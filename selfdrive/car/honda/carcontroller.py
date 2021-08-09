@@ -89,16 +89,15 @@ class CarController():
     self.new_radar_config = False
 
     # begin tesla radar
-    p = Params()
-    self.useTeslaRadar = p.get("TeslaRadarActivate", encoding='utf8') == "1"
+    self.useTeslaRadar = Params().get_bool("TeslaRadarActivate")
     if self.useTeslaRadar:
       # info on this is available at https://tinkla.us/index.php/Tesla_Bosch_Radar
       # must set the radar's VIN in /data/params/d/
-      self.radarVin = p.get("TeslaRadarVin").decode()
+      self.radarVin = Params().get("TeslaRadarVin").decode()
       if self.radarVin != "00000000000000000":
         self.radarVin_idx = 0
-        self.radarPosition = p.get("TeslaRadarPosition")
-        self.radarEpasType = p.get("TeslaRadarEpasType")
+        self.radarPosition = Params().get("TeslaRadarPosition")
+        self.radarEpasType = Params().get("TeslaRadarEpasType")
         self.radarBus = 0
         self.radarTriggerMessage = 0x94
       else:
