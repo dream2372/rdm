@@ -467,7 +467,7 @@ class CarInterface(CarInterfaceBase):
       ret.brakeMaxBP = [0.]  # m/s
       ret.brakeMaxV = [1.]   # max brake allowed, 3.5m/s^2
       ret.startAccel = 0.25
-      ret.stoppingBrakeRate = 0.05 # reach stopping target smoothly
+      ret.stoppingBrakeRate = 0.075 # reach stopping target smoothly
       ret.longitudinalTuning.deadzoneBP = [0., 8.05]
       ret.longitudinalTuning.deadzoneV = [.0, .10]
     else:
