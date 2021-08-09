@@ -74,8 +74,13 @@ TogglesPanel::TogglesPanel(QWidget *parent) : QWidget(parent) {
                                   "../assets/offroad/icon_road.png",
                                   this));
   toggles.append(new ParamControl("TeslaRadarActivate",
-                                  "Enable Tesla Radar",
-                                  "Use Tesla Radar for vehicle detection.",
+                                  "Enable Tesla Rdar",
+                                  "Use Tesla radar + vision for vehicle detection.",
+                                  "../assets/offroad/icon_road.png",
+                                  this));
+  toggles.append(new ParamControl("DisableRadar",
+                                  "VOACC Toggle",
+                                  "Disables AEB! Use vision-only for vehicle detection.",
                                   "../assets/offroad/icon_road.png",
                                   this));
 
