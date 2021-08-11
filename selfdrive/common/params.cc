@@ -208,6 +208,7 @@ std::unordered_map<std::string, uint32_t> keys = {
     {"UpdateAvailable", CLEAR_ON_MANAGER_START},
     {"UpdateFailedCount", CLEAR_ON_MANAGER_START},
     {"Version", PERSISTENT},
+    {"VisionRadarToggle", PERSISTENT},
     {"Offroad_ChargeDisabled", CLEAR_ON_MANAGER_START | CLEAR_ON_PANDA_DISCONNECT},
     {"Offroad_ConnectivityNeeded", CLEAR_ON_MANAGER_START},
     {"Offroad_ConnectivityNeededPrompt", CLEAR_ON_MANAGER_START},
