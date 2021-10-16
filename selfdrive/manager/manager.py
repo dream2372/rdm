@@ -36,6 +36,8 @@ def manager_init():
     ("CompletedTrainingVersion", "0"),
     ("HasAcceptedTerms", "0"),
     ("OpenpilotEnabledToggle", "1"),
+    ("DisableRadar", "1"),
+    ("DisableRadar_Allow", "1"),
     ("TeslaRadarActivate", "1"),
     ("TeslaRadarVin", "5YJSA1H24EFP54660"),
     ("TeslaRadarPosition", "0"),
