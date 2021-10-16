@@ -39,10 +39,11 @@ def manager_init():
     ("DisableRadar", "1"),
     ("DisableRadar_Allow", "1"),
     ("TeslaRadarActivate", "1"),
-    ("TeslaRadarVin", "5YJSA1H24EFP54660"),
-    ("TeslaRadarPosition", "0"),
-    ("TeslaRadarOffset", "0.57"),
-    ("TeslaRadarEpasType", "0"),
+    # CHANGE THESE TO MATCH YOUR UNIT AND INSTALL LOCATION!
+    ("TeslaRadarVin", "5YJSA1H24EFP54660"), # varies with the unit firmware
+    ("TeslaRadarPosition", "0"), # varies with the unit firmware
+    ("TeslaRadarOffset", "0.57"), # measured from center of vehicle. Left is positive
+    ("TeslaRadarEpasType", "0"), # varies with the unit firmware
   ]
   if not PC:
     default_params.append(("LastUpdateTime", datetime.datetime.utcnow().isoformat().encode('utf8')))
