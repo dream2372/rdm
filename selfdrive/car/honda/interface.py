@@ -75,8 +75,8 @@ class CarInterface(CarInterfaceBase):
     if candidate in HONDA_BOSCH:
       if useTeslaRadar:
         # tesla radar runs radard at ~8-10hz. compensate for this here
-        ret.longitudinalTuning.kpV = [0.4]
-        ret.longitudinalTuning.kiV = [0.08]
+        ret.longitudinalTuning.kpV = [0.2]
+        ret.longitudinalTuning.kiV = [0.04]
         # # TODO: old tuning. keeping for now. cleanup
         # ret.longitudinalTuning.kpBP = [0., 5., 35.]
         # ret.longitudinalTuning.kpV = [0.6, 0.4, 0.25]
