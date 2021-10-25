@@ -120,7 +120,7 @@ def create_ui_commands(packer, pcm_speed, hud, car_fingerprint, is_metric, idx, 
         'ACC_ON': hud.car != 0,
         'SET_TO_X1': 1,
         'IMPERIAL_UNIT': int(not is_metric),
-        #'FCM_OFF': 1, # check what bit this actually is in the dbc.
+        #'FCM_OFF': 1, # stock comma! check what bit this actually is in the dbc.
         # TODO: which bits are for the indicator, hud nag, etc.
         'FCM_OFF_1': 1,  # nag part 1/2
         'FCM_OFF_2': 1,  # nag part 2/2
