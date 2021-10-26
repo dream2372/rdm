@@ -8,14 +8,11 @@ from selfdrive.car.honda.values import DBC
 from common.params import Params
 
 
-# for calibration we only want fixed objects within 2 m of the center line and between 2.5 and 4.5 m far from radar
-CALIBRATION = False
-MINX = 1
-MAXX = 6
-MINY = -2.0
-MAXY = 2.0
+# HACK: put your dongle here if your radar thinks its alignment is wack#
+# hint: check out ['RADC_SGUFail'] in ['TeslaRadarSguInfo']
+MY_ALIGNMENT_IS_BAD_AND_I_SHOULD_FEEL_BAD = [b'8a5868733a518b54', b'3bf43be62b59afd6']
 
-
+## NIDEC
 def _create_nidec_can_parser(car_fingerprint):
   radar_messages = [0x400] + list(range(0x430, 0x43A)) + list(range(0x440, 0x446))
   signals = list(zip(['RADAR_STATE'] +
@@ -27,186 +24,208 @@ def _create_nidec_can_parser(car_fingerprint):
   return CANParser(DBC[car_fingerprint]['radar'], signals, checks, 1)
 
 
-BOSCH_MAX_DIST = 250.  # max distance for radar
+## Tesla
+# TODO: UNUSED! Move to standalone script.
+# For calibration we only want fixed objects within 2 m of the center line and between 2.5 and 4.5 m far from radar
+CALIBRATION = False
+MINX = 1
+MAXX = 6
+MINY = -2.0
+MAXY = 2.0
 
-# Tesla Bosch firmware reports 37 data points in total. We can use all points + tracks ('M' and 'L') or a selected set of 5 ('L').
-# 'L' tracks can drop out at distances lower than 6 meters leaving us with no lead data. Need to use all points and maybe filter out extraneous points
-USE_ALL_OBJECTS = True
-if not USE_ALL_OBJECTS:
-  # use these for 5 'L' tracks
-  RADAR_A_MSGS = list(range(0x371, 0x37F, 3))
-  RADAR_B_MSGS = list(range(0x372, 0x37F, 3))
-else:
-  # use these for point cloud + 'L' tracks (32 'M' points + 5 'L' tracks)
-  RADAR_A_MSGS = list(range(0x310, 0x36F, 3)) + list(range(0x371, 0x37F, 3))
-  RADAR_B_MSGS = list(range(0x311, 0x36F, 3)) + list(range(0x372, 0x37F, 3))
+TESLA_RADAR_MSGS_A = list(range(0x310, 0x36E, 3))
+TESLA_RADAR_MSGS_B = list(range(0x311, 0x36F, 3))
+NUM_TESLA_POINTS = len(TESLA_RADAR_MSGS_A)
 
-OBJECT_MIN_PROBABILITY = 50.
-CLASS_MIN_PROBABILITY = 50.
-RADAR_MESSAGE_FREQUENCY = 0.050 * 1e9  # time in ns, radar sends data at 0.06 s
-VALID_MESSAGE_COUNT_THRESHOLD = 4
-Y_MAX = 3.5 # max yRel in each Direction
+def _create_tesla_can_parser(CP):
+  # Status messages
+  signals = [
+    ('RADC_HWFail', 'TeslaRadarSguInfo', 0),
+    ('RADC_SGUFail', 'TeslaRadarSguInfo', 0),
+    ('RADC_SensorDirty', 'TeslaRadarSguInfo', 0),
+    ('RADC_a012_espMIA', 'TeslaRadarAlertMatrix', 0),
+    ('RADC_a013_gtwMIA', 'TeslaRadarAlertMatrix', 0),
+    ('RADC_a014_sccmMIA', 'TeslaRadarAlertMatrix', 0),
+    ('RADC_a042_xwdValidity', 'TeslaRadarAlertMatrix', 0),
+  ]
 
+  checks = [
+    ('TeslaRadarSguInfo', 10),
+    ('TeslaRadarAlertMatrix', 10),
+  ]
 
-def _create_tesla_can_parser(car_fingerprint):
-  bus = 0
+  # Radar tracks
+  for i in range(NUM_TESLA_POINTS):
+    msg_id_a = TESLA_RADAR_MSGS_A[i]
+    msg_id_b = TESLA_RADAR_MSGS_B[i]
 
-  msg_a_n = len(RADAR_A_MSGS)
-  msg_b_n = len(RADAR_B_MSGS)
+    # There is a bunch more info in the messages,
+    # but these are the only things actually used in openpilot
+    signals.extend([
+      ('LongDist', msg_id_a, 255),
+      ('LongSpeed', msg_id_a, 0),
+      ('LatDist', msg_id_a, 0),
+      ('LongAccel', msg_id_a, 0),
+      ('Meas', msg_id_a, 0),
+      ('Tracked', msg_id_a, 0),
+      ('Index', msg_id_a, 0),
 
-  signals = list(zip(['LongDist'] * msg_a_n + ['LatDist'] * msg_a_n +
-                ['LongSpeed'] * msg_a_n + ['LongAccel'] * msg_a_n +
-                ['Valid'] * msg_a_n + ['Tracked'] * msg_a_n +
-                ['Meas'] * msg_a_n + ['ProbExist'] * msg_a_n +
-                ['Index'] * msg_a_n + ['ProbObstacle'] * msg_a_n +
-                ['LatSpeed'] * msg_b_n + ['Index2'] * msg_b_n +
-                ['Class'] * msg_b_n + ['ProbClass'] * msg_b_n +
-                ['Length'] * msg_b_n + ['dZ'] * msg_b_n + ['MovingState'] * msg_b_n,
-                RADAR_A_MSGS * 10 + RADAR_B_MSGS * 7,
-                [255.] * msg_a_n + [0.] * msg_a_n + [0.] * msg_a_n + [0.] * msg_a_n +
-                [0] * msg_a_n + [0] * msg_a_n + [0] * msg_a_n + [0.] * msg_a_n +
-                [0] * msg_a_n + [0.] * msg_a_n + [0.] * msg_b_n + [0] * msg_b_n +
-                [0] * msg_b_n + [0.] * msg_b_n + [0.] * msg_b_n + [0.] * msg_b_n + [0] * msg_b_n))
+      ('LatSpeed', msg_id_b, 0),
+      ('Index2', msg_id_b, 0),
+    ])
 
-  checks = list(zip(RADAR_A_MSGS + RADAR_B_MSGS, [6]*(msg_a_n + msg_b_n)))
+    checks.extend([
+      (msg_id_a, 8),
+      (msg_id_b, 8),
+    ])
 
-  return CANParser(DBC[car_fingerprint]['radar'], signals, checks, bus)
+  return CANParser(DBC[CP.carFingerprint]['radar'], signals, checks, 0)
 
 
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     super().__init__(CP)
-    use_tesla = Params().get_bool("TeslaRadarActivate")
-    self.pts = {}
-    self.delay = int(round(0.1 / CP.radarTimeStep)) # 0.1s delay of radar
+    self.useTeslaRadar = Params().get_bool("TeslaRadarActivate")
+    self.ignoreSGUAlignment = Params().get("DongleId") in MY_ALIGNMENT_IS_BAD_AND_I_SHOULD_FEEL_BAD
     self.updated_messages = set()
-    self.canErrorCounter = 0
     self.track_id = 0
-
-    # TODO: check for these
-    self.canConfigWrong = False
-    self.alignmentFault = False
-
     self.radar_off_can = CP.radarOffCan
-    self.radar_ts = CP.radarTimeStep
+
     if self.radar_off_can:
       self.rcp = None
+    elif self.useTeslaRadar:
+      self.rcp = _create_tesla_can_parser(CP)
+      self.radarOffset = float(Params().get("TeslaRadarOffset"))
+      self.trigger_msg = TESLA_RADAR_MSGS_B[-1]
     else:
-      if use_tesla:
-        self.valid_cnt = {key: 0 for key in RADAR_A_MSGS}
-        self.rcp = _create_tesla_can_parser(CP.carFingerprint)
-        self.radarOffset = float(Params().get("TeslaRadarOffset"))
-        self.trackId = 1
-        self.trigger_start_msg = RADAR_A_MSGS[0]
-        self.trigger_end_msg = RADAR_B_MSGS[-1]
-      else:
-        # Nidec
-        self.rcp = _create_nidec_can_parser(CP.carFingerprint)
-        self.trigger_msg = 0x445
-        self.updated_messages = set()
-
+      # Nidec
+      print("nidec radar!")
+      self.radar_fault = False
+      self.radar_wrong_config = False
+      self.rcp = _create_nidec_can_parser(CP.carFingerprint)
+      self.trigger_msg = 0x445
   def update(self, can_strings):
+    # in Honda Bosch radar and we are only steering for now, so sleep 0.05s to keep
     # radard at 20Hz and return no points
     if self.radar_off_can:
+      print("no radar!")
       return super().update(None)
 
     vls = self.rcp.update_strings(can_strings)
     self.updated_messages.update(vls)
 
-#    if self.trigger_start_msg not in self.updated_messages:
- #     return None
-
-    if self.trigger_end_msg not in self.updated_messages:
+    if self.trigger_msg not in self.updated_messages:
       return None
 
-    rr = self._update(self.updated_messages)
-    self.updated_messages.clear()
+    if self.useTeslaRadar:
+      rr = self._update_tesla(self.updated_messages)
+
+      self.updated_messages.clear()
+    else:
+      rr = self._update_nidec(self.updated_messages)
+      self.updated_messages.clear()
     return rr
 
-
-  def _update(self, updated_messages):
+  def _update_nidec(self, updated_messages):
     ret = car.RadarData.new_message()
-    for message in sorted(updated_messages):
-      if not(message in RADAR_A_MSGS):
-        if message in self.pts:
-          del self.pts[message]
-        continue
-      cpt = self.rcp.vl[message]
-      if not (message + 1 in updated_messages):
-        continue
-      cpt2 = self.rcp.vl[message+1]
-      # ensure the two messages are from the same frame reading
-      if cpt['Index'] != cpt2['Index2']:
-        continue
-      # TODO: move later
-      if CALIBRATION:
-        if (cpt['LongDist'] >= MINX) and (cpt['LongDist'] <= MAXX) and (cpt['LatDist'] >= MINY) and (cpt['LatDist'] <= MAXY):
-          print(cpt['LongDist'], end=" "), print(cpt['LatDist'], end=" "), print(cpt['ProbExist'])
 
-      if (cpt['LongDist'] >= BOSCH_MAX_DIST) or (cpt['LongDist'] == 0) or (not cpt['Tracked']) or (not cpt['Valid']):
-        self.valid_cnt[message] = 0    # reset counter
-        if message in self.pts:
-          del self.pts[message]
-      elif cpt['Valid'] and (cpt['LongDist'] < BOSCH_MAX_DIST) and (cpt['LongDist'] > 0) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY):
-        self.valid_cnt[message] += 1
+    for ii in sorted(updated_messages):
+      cpt = self.rcp.vl[ii]
+      if ii == 0x400:
+        # check for radar faults
+        self.radar_fault = cpt['RADAR_STATE'] != 0x79
+        self.radar_wrong_config = cpt['RADAR_STATE'] == 0x69
+      elif cpt['LONG_DIST'] < 255:
+        if ii not in self.pts or cpt['NEW_TRACK']:
+          self.pts[ii] = car.RadarData.RadarPoint.new_message()
+          self.pts[ii].trackId = self.track_id
+          self.track_id += 1
+        self.pts[ii].dRel = cpt['LONG_DIST']  # from front of car
+        self.pts[ii].yRel = -cpt['LAT_DIST']  # in car frame's y axis, left is positive
+        self.pts[ii].vRel = cpt['REL_SPEED']
+        self.pts[ii].aRel = float('nan')
+        self.pts[ii].yvRel = float('nan')
+        self.pts[ii].measured = True
       else:
-        self.valid_cnt[message] = max(self.valid_cnt[message] - 20, 0)
-        if (self.valid_cnt[message] == 0) and (message in self.pts):
-          del self.pts[message]
+        if ii in self.pts:
+          del self.pts[ii]
 
-      # radar point only valid if it's a valid measurement and score is above 50
-      # bosch radar data needs to match Index and Index2 for validity
-      # also for now ignore construction elements
-      if (cpt['Valid'] or cpt['Tracked']) and (cpt['LongDist'] > 0) and (cpt['LongDist'] < BOSCH_MAX_DIST) and \
-          (self.valid_cnt[message] > VALID_MESSAGE_COUNT_THRESHOLD) and (cpt['ProbExist'] >= OBJECT_MIN_PROBABILITY) and \
-          (cpt2['Class'] < 4): # and \
-          #(-Y_MAX < (cpt['LatDist'] - self.radarOffset) < Y_MAX):
-        if message not in self.pts and (cpt['Tracked']):
-          self.pts[message] = car.RadarData.RadarPoint.new_message()
-          self.pts[message].trackId = self.trackId
-
-          self.trackId = (self.trackId + 1) & 0xFFFFFFFFFFFFFFFF
-          if self.trackId == 0:
-            self.trackId = 1
-        if message in self.pts:
-          self.pts[message].dRel = cpt['LongDist']  # from front of car
-          self.pts[message].yRel = cpt['LatDist'] + self.radarOffset  # in car frame's y axis, left is positive.
-          self.pts[message].vRel = cpt['LongSpeed']
-          self.pts[message].aRel = cpt['LongAccel']
-          self.pts[message].yvRel = cpt2['LatSpeed']
-          self.pts[message].measured = bool(cpt['Meas'])
-
-
-    ret.points = list(self.pts.values())
     errors = []
     if not self.rcp.can_valid:
       errors.append("canError")
-      self.canErrorCounter += 1
-    else:
-      self.canErrorCounter = 0
-    # BB: Only trigger canError for 3 consecutive errors
-    if self.canErrorCounter > 9:
-      ret.errors = errors
-    else:
-      ret.errors = []
+    if self.radar_fault:
+      errors.append("fault")
+    if self.radar_wrong_config:
+      errors.append("wrongConfig")
+    ret.errors = errors
 
-    # if using only "L" tracks and the radar's alignment bad flags are set, set a permanent but engagable alert
-    if (self.alignmentFault and not USE_ALL_OBJECTS) or self.canConfigWrong:
-      errors.append("radarFault")
+    ret.points = list(self.pts.values())
 
     return ret
 
+  def _update_tesla(self, can_strings):
+    ret = car.RadarData.new_message()
 
-# radar_interface standalone tester
-if __name__ == "__main__":
-  ## TODO: fix this. CP of None doesn't work
-  CP = None
-  RI = RadarInterface(CP)
-  while 1:
-    # ret,retext,ahb = RI.update(can_strings = None, v_ego = 0.)
-    # print(chr(27) + "[2J")
-    # print(ret,retext)
-    # ret = RI.update(can_strings = None, v_ego = 0.)
-    ret = RI.update(can_strings=None)
-    print(chr(27) + "[2J")
-    print(ret)
+    # Errors
+    errors = []
+    sgu_info = self.rcp.vl['TeslaRadarSguInfo']
+    alert_info = self.rcp.vl['TeslaRadarAlertMatrix']
+
+    if not self.rcp.can_valid:
+      errors.append('canError')
+
+    faked_modules_missing = alert_info['RADC_a012_espMIA'] or alert_info['RADC_a013_gtwMIA'] or alert_info['RADC_a014_sccmMIA']
+    xwd_panda_setting_bad = alert_info['RADC_a042_xwdValidity']
+
+    if sgu_info['RADC_HWFail'] or \
+      (not self.ignoreSGUAlignment and sgu_info['RADC_SGUFail']) \
+      or sgu_info['RADC_SensorDirty'] \
+      or faked_modules_missing \
+      or xwd_panda_setting_bad:
+      print("Radar fault!")
+
+      if sgu_info['RADC_HWFail']:
+        print("Radar hardware fault!")
+      if (not self.ignoreSGUAlignment and sgu_info['RADC_SGUFail']):
+        print("SGU alignment error. Check alignment. If OK, add your dongle ID to the list at the top of selfdrive/car/honda/radar_interface.py")
+      if sgu_info['RADC_SensorDirty']:
+        print("Error. Clean radar to continue.")
+      if faked_modules_missing:
+        print("Faked Tesla modules missing. Check panda firmware.")
+      if xwd_panda_setting_bad:
+        print("xwd setting is incorrect for this radar. Change in panda and try again.")
+      errors.append('fault')
+    ret.errors = errors
+
+    # Radar tracks
+    for i in range(NUM_TESLA_POINTS):
+      msg_a = self.rcp.vl[TESLA_RADAR_MSGS_A[i]]
+      msg_b = self.rcp.vl[TESLA_RADAR_MSGS_B[i]]
+
+      # Make sure msg A and B are together
+      if msg_a['Index'] != msg_b['Index2']:
+        continue
+
+      # Check if it's a valid track
+      if not msg_a['Tracked']:
+        if i in self.pts:
+          del self.pts[i]
+        continue
+
+      # New track!
+      if i not in self.pts:
+        self.pts[i] = car.RadarData.RadarPoint.new_message()
+        self.pts[i].trackId = self.track_id
+        self.track_id += 1
+
+      # Parse track data
+      self.pts[i].dRel = msg_a['LongDist']
+      self.pts[i].yRel = msg_a['LatDist'] + self.radarOffset  # in car frame's y axis, left is positive.
+      self.pts[i].vRel = msg_a['LongSpeed']
+      self.pts[i].aRel = msg_a['LongAccel']
+      self.pts[i].yvRel = msg_b['LatSpeed']
+      self.pts[i].measured = bool(msg_a['Meas'])
+
+    ret.points = list(self.pts.values())
+    self.updated_messages.clear()
+    return ret
