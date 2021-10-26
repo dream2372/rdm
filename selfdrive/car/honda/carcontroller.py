@@ -4,7 +4,7 @@ from common.realtime import DT_CTRL
 from selfdrive.controls.lib.drive_helpers import rate_limit
 from common.numpy_fast import clip, interp
 from selfdrive.car import create_gas_command
-from selfdrive.car.honda import hondacan, teslaradarcan
+from selfdrive.car.honda import hondacan
 from selfdrive.car.honda.values import CruiseButtons, VISUAL_HUD, HONDA_BOSCH, HONDA_NIDEC_ALT_PCM_ACCEL, CarControllerParams
 from opendbc.can.packer import CANPacker
 from common.params import Params
@@ -286,7 +286,7 @@ class CarController():
 
     if self.useTeslaRadar:
       if (frame % 100 == 0):
-        can_sends.append(teslaradarcan.create_radar_VIN_msg(self.radarVin_idx, str(self.radarVin), self.radarBus, self.radarTriggerMessage, self.useTeslaRadar, int(self.radarPosition), int(self.radarEpasType)))
+        can_sends.append(hondacan.create_radar_param_msg(self.radarVin_idx, str(self.radarVin), self.radarBus, self.radarTriggerMessage, self.useTeslaRadar, int(self.radarPosition), int(self.radarEpasType)))
         self.radarVin_idx += 1
         self.radarVin_idx = self.radarVin_idx % 3
     return can_sends

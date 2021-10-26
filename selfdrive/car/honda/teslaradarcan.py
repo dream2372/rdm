@@ -36,7 +36,7 @@ from ctypes import create_string_buffer
 #  return checksum
 
 
-def create_radar_VIN_msg(radarId, radarVIN, radarCAN, radarTriggerMessage, useRadar, radarPosition, radarEpasType):
+def create_radar_param_msg(radarId, radarVIN, radarCAN, radarTriggerMessage, useRadar, radarPosition, radarEpasType):
   msg_id = 0x560
   msg_len = 8
   msg = create_string_buffer(msg_len)
