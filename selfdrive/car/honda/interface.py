@@ -42,6 +42,8 @@ class CarInterface(CarInterfaceBase):
       useTeslaRadar = Params().get_bool("TeslaRadarActivate")
       DisableRadar = Params().get_bool("DisableRadar")
       ret.openpilotLongitudinalControl = DisableRadar or useTeslaRadar
+
+      # varies greatly between 7-11hz. This is the closest we can get to the slowest rate
       if useTeslaRadar:
         ret.radarTimeStep = 0.09
 
