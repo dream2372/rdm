@@ -85,6 +85,7 @@ def _create_tesla_can_parser(CP):
 class RadarInterface(RadarInterfaceBase):
   def __init__(self, CP):
     super().__init__(CP)
+
     self.useTeslaRadar = Params().get_bool("TeslaRadarActivate")
     self.ignoreSGUAlignment = Params().get("DongleId") in MY_ALIGNMENT_IS_BAD_AND_I_SHOULD_FEEL_BAD
     self.updated_messages = set()
@@ -99,16 +100,15 @@ class RadarInterface(RadarInterfaceBase):
       self.trigger_msg = TESLA_RADAR_MSGS_B[-1]
     else:
       # Nidec
-      print("nidec radar!")
       self.radar_fault = False
       self.radar_wrong_config = False
       self.rcp = _create_nidec_can_parser(CP.carFingerprint)
       self.trigger_msg = 0x445
+
   def update(self, can_strings):
     # in Honda Bosch radar and we are only steering for now, so sleep 0.05s to keep
     # radard at 20Hz and return no points
     if self.radar_off_can:
-      print("no radar!")
       return super().update(None)
 
     vls = self.rcp.update_strings(can_strings)
@@ -119,11 +119,10 @@ class RadarInterface(RadarInterfaceBase):
 
     if self.useTeslaRadar:
       rr = self._update_tesla(self.updated_messages)
-
-      self.updated_messages.clear()
     else:
       rr = self._update_nidec(self.updated_messages)
-      self.updated_messages.clear()
+
+    self.updated_messages.clear()
     return rr
 
   def _update_nidec(self, updated_messages):
