@@ -43,7 +43,7 @@ def main():
         dRel = round(track.dRel - radarOffset, 2)
         yRel = round(track.yRel, 2)
         if (MAXX >= dRel >= MINX) and (MAXY >= yRel >= MINY):
-          # TODO: print multiple possiblities before clearing the screen. This code assumes only one good point
+          # TODO: print multiple possiblities before clearing the screen.
           # print(chr(27) + "[2J")
           print("ID ", end=' '), print(track.trackId, end=' '), print(", Distance", end=' '), print(f'{dRel:.2f}', end=' '), print(", Horizontal", end=' '), print(f'{yRel:.2f}', end=' '), print("")
 if __name__ == '__main__':
