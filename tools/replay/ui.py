@@ -24,7 +24,7 @@ os.environ['BASEDIR'] = BASEDIR
 
 ANGLE_SCALE = 5.0
 
-def ui_thread(addr):
+def ui_thread(addr, no_cam):
   cv2.setNumThreads(1)
   pygame.init()
   pygame.font.init()
@@ -100,7 +100,7 @@ def ui_thread(addr):
 
   draw_plots = init_plots(plot_arr, name_to_arr_idx, plot_xlims, plot_ylims, plot_names, plot_colors, plot_styles)
 
-  vipc_client = VisionIpcClient("camerad", VisionStreamType.VISION_STREAM_RGB_BACK, True)
+  vipc_client = VisionIpcClient("camerad", VisionStreamType.VISION_STREAM_RGB_BACK, True) if not no_cam else None
   while 1:
     list(pygame.event.get())
 
@@ -109,26 +109,27 @@ def ui_thread(addr):
     top_down = top_down_surface, lid_overlay
 
     # ***** frame *****
-    if not vipc_client.is_connected():
-      vipc_client.connect(True)
+    if not no_cam:
+      if not vipc_client.is_connected():
+        vipc_client.connect(True)
 
-    rgb_img_raw = vipc_client.recv()
+      rgb_img_raw = vipc_client.recv()
 
-    if rgb_img_raw is None or not rgb_img_raw.any():
-      continue
+      if rgb_img_raw is None or not rgb_img_raw.any():
+        continue
 
-    num_px = len(rgb_img_raw) // 3
-    imgff_shape = (vipc_client.height, vipc_client.width, 3)
+      num_px = len(rgb_img_raw) // 3
+      imgff_shape = (vipc_client.height, vipc_client.width, 3)
 
-    if imgff is None or imgff.shape != imgff_shape:
-      imgff = np.zeros(imgff_shape, dtype=np.uint8)
+      if imgff is None or imgff.shape != imgff_shape:
+        imgff = np.zeros(imgff_shape, dtype=np.uint8)
 
-    imgff = np.frombuffer(rgb_img_raw, dtype=np.uint8).reshape((vipc_client.height, vipc_client.width, 3))
-    imgff = imgff[:, :, ::-1]  # Convert BGR to RGB
-    zoom_matrix = _BB_TO_FULL_FRAME[num_px]
-    cv2.warpAffine(imgff, zoom_matrix[:2], (img.shape[1], img.shape[0]), dst=img, flags=cv2.WARP_INVERSE_MAP)
+      imgff = np.frombuffer(rgb_img_raw, dtype=np.uint8).reshape((vipc_client.height, vipc_client.width, 3))
+      imgff = imgff[:, :, ::-1]  # Convert BGR to RGB
+      zoom_matrix = _BB_TO_FULL_FRAME[num_px]
+      cv2.warpAffine(imgff, zoom_matrix[:2], (img.shape[1], img.shape[0]), dst=img, flags=cv2.WARP_INVERSE_MAP)
 
-    intrinsic_matrix = _INTRINSICS[num_px]
+      intrinsic_matrix = _INTRINSICS[num_px]
 
     sm.update(0)
 
@@ -221,6 +222,9 @@ def get_arg_parser():
 
   parser.add_argument("--frame-address", default=None,
                       help="The frame address (fully qualified ZMQ endpoint for frames) on which to receive zmq messages.")
+
+  parser.add_argument('--no-cam', action='store_true',
+                      help="Disable the camera client.")
   return parser
 
 if __name__ == "__main__":
@@ -230,4 +234,4 @@ if __name__ == "__main__":
     os.environ["ZMQ"] = "1"
     messaging.context = messaging.Context()
 
-  ui_thread(args.ip_address)
+  ui_thread(args.ip_address, args.no_cam)
