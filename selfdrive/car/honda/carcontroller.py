@@ -13,7 +13,8 @@ from common.params import Params
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
-# TODO: calc against 'ENGINE_TORQUE_REQUEST' instead of this handcoded policy. would that work on hybrid/phev?
+# calculate only additonal braking due to creep engine torque
+# TODO: calc against 'ENGINE_TORQUE_REQUEST' instead. would that work on hybrid/phev?
 def compute_gb_honda_bosch(accel, speed):
   creep_brake = 0.0
   creep_speed = 2.3
