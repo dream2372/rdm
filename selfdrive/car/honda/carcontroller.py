@@ -21,7 +21,7 @@ def compute_gb_honda_bosch(accel, speed):
   creep_brake_value = 0.7
   if speed < creep_speed:
     creep_brake = (creep_speed - speed) / creep_speed * creep_brake_value
-  return 0., float(-creep_brake)
+  return 0.0, float(-creep_brake)
 
 
 def compute_gb_honda_nidec(accel, speed):
