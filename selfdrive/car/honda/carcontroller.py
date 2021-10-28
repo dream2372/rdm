@@ -13,9 +13,14 @@ from common.params import Params
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 LongCtrlState = car.CarControl.Actuators.LongControlState
 
+# TODO: calc against 'ENGINE_TORQUE_REQUEST' instead of this handcoded policy. would that work on hybrid/phev?
 def compute_gb_honda_bosch(accel, speed):
-  #TODO returns 0s, is unused
-  return 0.0, 0.0
+  creep_brake = 0.0
+  creep_speed = 2.3
+  creep_brake_value = 0.7
+  if speed < creep_speed:
+    creep_brake = (creep_speed - speed) / creep_speed * creep_brake_value
+  return 0., float(-creep_brake)
 
 
 def compute_gb_honda_nidec(accel, speed):
@@ -229,7 +234,7 @@ class CarController():
         ts = frame * DT_CTRL
 
         if CS.CP.carFingerprint in HONDA_BOSCH:
-          accel = clip(accel, P.BOSCH_ACCEL_MIN, P.BOSCH_ACCEL_MAX)
+          accel = clip((accel + brake), P.BOSCH_ACCEL_MIN, P.BOSCH_ACCEL_MAX)
           bosch_gas = interp(accel, P.BOSCH_GAS_LOOKUP_BP, P.BOSCH_GAS_LOOKUP_V)
           can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, active, accel, bosch_gas, idx, stopping, starting, CS.CP.carFingerprint))
 
