@@ -43,7 +43,8 @@ class CarInterface(CarInterfaceBase):
       DisableRadar = Params().get_bool("DisableRadar")
       ret.openpilotLongitudinalControl = DisableRadar or useTeslaRadar
 
-      # varies greatly between 7-11hz. This is the closest we can get to the slowest rate
+      # Varies greatly between 7-11hz and causes ton of cumLag in radard.
+      # This is the closest we can get to the slowest rate with the current kalman filter params
       if useTeslaRadar:
         ret.radarTimeStep = 0.09
 
