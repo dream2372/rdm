@@ -98,6 +98,7 @@ class RadarInterface(RadarInterfaceBase):
       self.rcp = _create_tesla_can_parser(CP)
       self.radarOffset = float(Params().get("TeslaRadarOffset"))
       self.trigger_msg = TESLA_RADAR_MSGS_B[-1]
+      self.delay = 1 # integer. is the radar behind the kalman filter's speed and that's why we try to crash?
     else:
       # Nidec
       self.radar_fault = False
