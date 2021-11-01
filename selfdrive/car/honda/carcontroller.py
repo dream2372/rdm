@@ -107,6 +107,7 @@ HUDData = namedtuple("HUDData",
 class CarController():
   def __init__(self, dbc_name, CP, VM):
     self.braking = False
+    self.boschBraking = False
     self.brake_steady = 0.
     self.brake_last = 0.
     self.apply_brake_last = 0
@@ -236,6 +237,7 @@ class CarController():
 
         if CS.CP.carFingerprint in HONDA_BOSCH:
           accel = clip((accel + brake), P.BOSCH_ACCEL_MIN, P.BOSCH_ACCEL_MAX)
+          self.boschBraking = True if accel < CarControllerParams.BOSCH_GAS_LOOKUP_BP[0] else False
           bosch_gas = interp(accel, P.BOSCH_GAS_LOOKUP_BP, P.BOSCH_GAS_LOOKUP_V)
           can_sends.extend(hondacan.create_acc_commands(self.packer, enabled, active, accel, bosch_gas, idx, stopping, starting, CS.CP.carFingerprint))
 
@@ -288,7 +290,7 @@ class CarController():
       #   print('aEgo error', end =' ')
       #   print(round(aTarget - CS.out.aEgo, 3))
       idx = (frame//10) % 4
-      can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.is_metric, idx, CS.CP.openpilotLongitudinalControl, CS.stock_hud))
+      can_sends.extend(hondacan.create_ui_commands(self.packer, pcm_speed, hud, CS.CP.carFingerprint, CS.is_metric, idx, CS.CP.openpilotLongitudinalControl, CS.stock_hud, self.boschBraking))
 
     if self.useTeslaRadar:
       if (frame % 100 == 0):
