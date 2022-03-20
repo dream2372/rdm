@@ -1,7 +1,7 @@
 #!/usr/bin/bash -e
 
 
-TARGET_DIR=/data/openpilot
+TARGET_DIR=$PWD
 cd $TARGET_DIR
 
 mv panda/ panda_tmp/
