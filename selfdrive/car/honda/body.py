@@ -1,6 +1,6 @@
 from cereal import body
 from opendbc.can.parser import CANParser
-from selfdrive.car.honda.values import DBC, BODY_SUNROOF_ON_CAN
+from selfdrive.car.honda.values import DBC, BODY_SUNROOF_ON_CAN, HondaFlags
 
 
 BodyState = body.BodyState
@@ -26,64 +26,65 @@ def get_body_parser(CP, offroad=False):
               ]
     checks += [("BSM_STATUS_LEFT", 3),
                ("BSM_STATUS_RIGHT", 3)]
-  # generic
-  signals += [# ajar state
-             ('LF_OPEN', 'LEFT_DOORS'),
-             ('LR_OPEN', 'LEFT_DOORS'),
-             ('RF_OPEN', 'RIGHT_DOORS'),
-             ('RR_OPEN', 'RIGHT_DOORS'),
-             ('TRUNK_OPEN', 'TRUNK_2'),
-             # locks
-             ('LF_UNLOCKED', 'LF_DOOR'),
-             ('UNLOCKED', 'RF_DOOR'),
-             ('UNLOCKED', 'LR_DOOR'),
-             ('UNLOCKED', 'RR_DOOR'),
-             # windows
-             ('LF_WINDOWSTATE', 'FRONT_WINDOWS'),
-             ('RF_WINDOWSTATE', 'FRONT_WINDOWS'),
-             # lighting
-             ('LEFTSIGNAL', 'LIGHTING_3'),
-             ('RIGHTSIGNAL', 'LIGHTING_3'),
-             ('HAZARDS_ENABLE', 'LIGHTING_3'),
-             ('REVERSE', 'LIGHTING_3'),
-             ('BRAKES', 'LIGHTING_3'),
-             ('PARKING_LIGHTS', 'LIGHTING_4'),
-             ('HIGH_BEAMS', 'LIGHTING_1'),
-             # ('LOW_BEAMS', 'LIGHTING_1'),
-             ]
+  if CP.flags & HondaFlags.BODY_CAN:
+    # generic
+    signals += [# ajar state
+               ('LF_OPEN', 'LEFT_DOORS'),
+               ('LR_OPEN', 'LEFT_DOORS'),
+               ('RF_OPEN', 'RIGHT_DOORS'),
+               ('RR_OPEN', 'RIGHT_DOORS'),
+               ('TRUNK_OPEN', 'TRUNK_2'),
+               # locks
+               ('LF_UNLOCKED', 'LF_DOOR'),
+               ('UNLOCKED', 'RF_DOOR'),
+               ('UNLOCKED', 'LR_DOOR'),
+               ('UNLOCKED', 'RR_DOOR'),
+               # windows
+               ('LF_WINDOWSTATE', 'FRONT_WINDOWS'),
+               ('RF_WINDOWSTATE', 'FRONT_WINDOWS'),
+               # lighting
+               ('LEFTSIGNAL', 'LIGHTING_3'),
+               ('RIGHTSIGNAL', 'LIGHTING_3'),
+               ('HAZARDS_ENABLE', 'LIGHTING_3'),
+               ('REVERSE', 'LIGHTING_3'),
+               ('BRAKES', 'LIGHTING_3'),
+               ('PARKING_LIGHTS', 'LIGHTING_4'),
+               ('HIGH_BEAMS', 'LIGHTING_1'),
+               # ('LOW_BEAMS', 'LIGHTING_1'),
+               ]
 
-  if CP.carFingerprint in BODY_SUNROOF_ON_CAN:
-    signals += [('SUNROOF_CLOSED', 'FRONT_WINDOWS')]
+    if CP.carFingerprint in BODY_SUNROOF_ON_CAN:
+      signals += [('SUNROOF_CLOSED', 'FRONT_WINDOWS')]
 
-  if not offroad:
-    checks += [
-      # TODO: ADD MORE FREQUENCY.
-      ("LEFT_DOORS", 0),
-      ("RIGHT_DOORS", 0),
-      ("TRUNK_2", 0),
-      ("LF_DOOR", 0),
-      ("RF_DOOR", 0),
-      ("LR_DOOR", 0),
-      ("RR_DOOR", 0),
-      ("FRONT_WINDOWS", 0),
-      ("LIGHTING_1", 3), # at least 3.33hz. faster if signals are changing
-      ("LIGHTING_3", 3), # at least 3.33hz. faster if signals are changing
-      ("LIGHTING_4", 3), # at least 3.33hz. faster if signals are changing
-    ]
-  else:
-    checks += [
-      ("LEFT_DOORS", 0),
-      ("RIGHT_DOORS", 0),
-      ("TRUNK_2", 0),
-      ("LF_DOOR", 0),
-      ("RF_DOOR", 0),
-      ("LR_DOOR", 0),
-      ("RR_DOOR", 0),
-      ("FRONT_WINDOWS", 0),
-      ("LIGHTING_1", 0), # at least 3.33hz. faster if signals are changing
-      ("LIGHTING_3", 0), # at least 3.33hz. faster if signals are changing
-      ("LIGHTING_4", 0), # at least 3.33hz. faster if signals are changing
-    ]
+    if not offroad:
+      checks += [
+        # TODO: ADD MORE FREQUENCY.
+        ("LEFT_DOORS", 0),
+        ("RIGHT_DOORS", 0),
+        ("TRUNK_2", 0),
+        ("LF_DOOR", 0),
+        ("RF_DOOR", 0),
+        ("LR_DOOR", 0),
+        ("RR_DOOR", 0),
+        ("FRONT_WINDOWS", 0),
+        ("LIGHTING_1", 3), # at least 3.33hz. faster if signals are changing
+        ("LIGHTING_3", 3), # at least 3.33hz. faster if signals are changing
+        ("LIGHTING_4", 3), # at least 3.33hz. faster if signals are changing
+      ]
+    else:
+      checks += [
+        ("LEFT_DOORS", 0),
+        ("RIGHT_DOORS", 0),
+        ("TRUNK_2", 0),
+        ("LF_DOOR", 0),
+        ("RF_DOOR", 0),
+        ("LR_DOOR", 0),
+        ("RR_DOOR", 0),
+        ("FRONT_WINDOWS", 0),
+        ("LIGHTING_1", 0), # at least 3.33hz. faster if signals are changing
+        ("LIGHTING_3", 0), # at least 3.33hz. faster if signals are changing
+        ("LIGHTING_4", 0), # at least 3.33hz. faster if signals are changing
+      ]
 
   bus_body = 0 # B-CAN is forwarded to CAN 0 on fake ethernet port
   return CANParser(DBC[CP.carFingerprint]["body"], signals, checks, bus_body)
@@ -92,10 +93,10 @@ def get_body_parser(CP, offroad=False):
 class Body():
   class SecurityControl:
     # must match body.capnp
+    # TODO: make this better
     na = None
     doorUnlockAll = [0xef81218, 0, b"\x04\x20", 0] # unlock
     doorLockAll = [0xef81218, 0, b"\x01\x00", 0] # lock
-
 
   class CAN:
     wakeup = [0x1e12ff18, 0, b"", 0]

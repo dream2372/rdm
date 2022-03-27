@@ -42,7 +42,8 @@ class CarControllerParams():
 class HondaFlags(IntFlag):
   # Bosch models with alternate set of LKAS_HUD messages
   BOSCH_EXT_HUD = 1
-  BODY_HARNESS = 64
+  # Common body CAN frames seen
+  BODY_CAN = 64
 
 
 # Car button codes

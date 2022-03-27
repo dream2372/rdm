@@ -48,7 +48,12 @@ class CarInterface(CarInterfaceBase):
 
       ret.pcmCruise = not ret.enableGasInterceptor
 
-    ret.enableBsm = 0x12f8bfa7 in fingerprint[0]
+    if any(0x12f8bfa7 in f for f in fingerprint.values()):
+      ret.enableBsm = True
+
+    # Check for common B-CAN frame (Civic Hatch, Civic Sedan Diesel, and Accord)
+    if any(0xEF86350 in f for f in fingerprint.values()):
+      ret.flags |= HondaFlags.BODY_CAN.value
 
     # Detect Bosch cars with new HUD msgs
     if any(0x33DA in f for f in fingerprint.values()):
@@ -343,7 +348,6 @@ class CarInterface(CarInterfaceBase):
     ret = self.CS.update(self.cp, self.cp_cam, self.cp_body)
 
     # TODO: Discover more B-CAN frame timing
-    # TODO: Fix? Tests will always fail due to lack of b-can data
     ret.canValid = self.cp.can_valid and self.cp_cam.can_valid and (self.cp_body is None or self.cp_body.can_valid)
 
     buttonEvents = []
