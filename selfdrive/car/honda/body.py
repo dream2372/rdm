@@ -9,8 +9,10 @@ Window = BodyState.Window
 Lighting = BodyState.Lighting
 
 
-def get_body_parser(CP, offroad=False):
+def get_body_parser(CP):
   signals = []
+
+  # Ignore frequencies when offroad. Works?
   checks = []
 
   # IOC feedback
@@ -56,35 +58,20 @@ def get_body_parser(CP, offroad=False):
     if CP.carFingerprint in BODY_SUNROOF_ON_CAN:
       signals += [('SUNROOF_CLOSED', 'FRONT_WINDOWS')]
 
-    if not offroad:
-      checks += [
-        # TODO: ADD MORE FREQUENCY.
-        ("LEFT_DOORS", 0),
-        ("RIGHT_DOORS", 0),
-        ("TRUNK_2", 0),
-        ("LF_DOOR", 0),
-        ("RF_DOOR", 0),
-        ("LR_DOOR", 0),
-        ("RR_DOOR", 0),
-        ("FRONT_WINDOWS", 0),
-        ("LIGHTING_1", 3), # at least 3.33hz. faster if signals are changing
-        ("LIGHTING_3", 3), # at least 3.33hz. faster if signals are changing
-        ("LIGHTING_4", 3), # at least 3.33hz. faster if signals are changing
-      ]
-    else:
-      checks += [
-        ("LEFT_DOORS", 0),
-        ("RIGHT_DOORS", 0),
-        ("TRUNK_2", 0),
-        ("LF_DOOR", 0),
-        ("RF_DOOR", 0),
-        ("LR_DOOR", 0),
-        ("RR_DOOR", 0),
-        ("FRONT_WINDOWS", 0),
-        ("LIGHTING_1", 0), # at least 3.33hz. faster if signals are changing
-        ("LIGHTING_3", 0), # at least 3.33hz. faster if signals are changing
-        ("LIGHTING_4", 0), # at least 3.33hz. faster if signals are changing
-      ]
+    checks += [
+      # TODO: ADD MORE FREQUENCY.
+      ("LEFT_DOORS", 0),
+      ("RIGHT_DOORS", 0),
+      ("TRUNK_2", 0),
+      ("LF_DOOR", 0),
+      ("RF_DOOR", 0),
+      ("LR_DOOR", 0),
+      ("RR_DOOR", 0),
+      ("FRONT_WINDOWS", 0),
+      ("LIGHTING_1", 3), # at least 3.33hz. faster if signals are changing
+      ("LIGHTING_3", 3), # at least 3.33hz. faster if signals are changing
+      ("LIGHTING_4", 3), # at least 3.33hz. faster if signals are changing
+    ]
 
   bus_body = 0 # B-CAN is forwarded to CAN 0 on fake ethernet port
   return CANParser(DBC[CP.carFingerprint]["body"], signals, checks, bus_body)
@@ -136,9 +123,9 @@ class Body():
     # bsm
     if CP.enableBsm:
       ret.leftBlindSpot.warning = bool(cp_body.vl["BSM_STATUS_LEFT"]["BSM_ALERT"])
-      ret.leftBlindSpot.mode = cp_body.vl["BSM_STATUS_LEFT"]["BSM_MODE"]
+      ret.leftBlindSpot.mode = int(cp_body.vl["BSM_STATUS_LEFT"]["BSM_MODE"])
       ret.rightBlindSpot.warning = bool(cp_body.vl["BSM_STATUS_RIGHT"]["BSM_ALERT"])
-      ret.rightBlindSpot.mode = cp_body.vl["BSM_STATUS_RIGHT"]["BSM_MODE"]
+      ret.rightBlindSpot.mode = int(cp_body.vl["BSM_STATUS_RIGHT"]["BSM_MODE"])
 
     # lighting
     # the bulb state, not stalk position
