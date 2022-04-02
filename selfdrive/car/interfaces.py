@@ -117,7 +117,7 @@ class CarInterfaceBase(ABC):
     if cs_out.seatbeltUnlatched:
       events.add(EventName.seatbeltNotLatched)
     if cs_out.gearShifter != GearShifter.drive and (extra_gears is None or
-       cs_out.gearShifter not in extra_gears):
+       cs_out.gearShifter not in extra_gears) and not cs_out.clutchPressed:
       events.add(EventName.wrongGear)
     if cs_out.gearShifter == GearShifter.reverse:
       events.add(EventName.reverseGear)
@@ -155,7 +155,8 @@ class CarInterfaceBase(ABC):
 
     # Disable on rising edge of gas or brake. Also disable on brake when speed > 0.
     if (cs_out.gasPressed and not self.CS.out.gasPressed) or \
-       (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)):
+       (cs_out.brakePressed and (not self.CS.out.brakePressed or not cs_out.standstill)) or \
+       cs_out.clutchPressed:
       events.add(EventName.pedalPressed)
 
     # we engage when pcm is active (rising edge)

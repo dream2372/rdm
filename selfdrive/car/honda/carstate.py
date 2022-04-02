@@ -63,10 +63,23 @@ def get_can_signals(CP, gearbox_msg, main_on_sig_msg):
       ("SCM_BUTTONS", 25),
     ]
 
-  if CP.carFingerprint in (CAR.CRV_HYBRID, CAR.CIVIC_BOSCH_DIESEL, CAR.ACURA_RDX_3G, CAR.HONDA_E):
-    checks.append((gearbox_msg, 50))
+
+  if CP.transmissionType != TransmissionType.manual:
+    if CP.carFingerprint in (CAR.CRV_HYBRID, CAR.CIVIC_BOSCH_DIESEL, CAR.ACURA_RDX_3G, CAR.HONDA_E):
+      checks.append((gearbox_msg, 50))
+    else:
+      checks.append((gearbox_msg, 100))
   else:
-    checks.append((gearbox_msg, 100))
+    # Dirty. For this inupstreamable port, who cares
+    signals.remove(("GEAR", gearbox_msg))
+    signals.remove(("GEAR_SHIFTER", gearbox_msg))
+    signals += [
+      ("NEUTRAL", "GAS_PEDAL_2"),
+      ("REVERSE", "SCM_FEEDBACK"),
+      ("CLUTCH_MAIN", "GAS_PEDAL_2"),
+      ("CLUTCH_ACC", "GAS_PEDAL_2"),
+    ]
+    checks.append(("GAS_PEDAL_2", 100))
 
   if CP.carFingerprint in HONDA_BOSCH_ALT_BRAKE_SIGNAL:
     signals.append(("BRAKE_PRESSED", "BRAKE_MODULE"))
@@ -151,15 +164,16 @@ class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
     can_define = CANDefine(DBC[CP.carFingerprint]["pt"])
-    self.gearbox_msg = "GEARBOX"
-    if CP.carFingerprint == CAR.ACCORD and CP.transmissionType == TransmissionType.cvt:
-      self.gearbox_msg = "GEARBOX_15T"
-
     self.main_on_sig_msg = "SCM_FEEDBACK"
     if CP.carFingerprint in HONDA_NIDEC_ALT_SCM_MESSAGES:
       self.main_on_sig_msg = "SCM_BUTTONS"
-
-    self.shifter_values = can_define.dv[self.gearbox_msg]["GEAR_SHIFTER"]
+    self.gearbox_msg = "GEARBOX"
+    if CP.carFingerprint == CAR.ACCORD and CP.transmissionType == TransmissionType.cvt:
+      self.gearbox_msg = "GEARBOX_15T"
+    if CP.carFingerprint == CAR.ACCORD and CP.transmissionType == TransmissionType.manual:
+      self.gearbox_msg = None
+    if self.gearbox_msg is not None:
+      self.shifter_values = can_define.dv[self.gearbox_msg]["GEAR_SHIFTER"]
     self.steer_status_values = defaultdict(lambda: "UNKNOWN", can_define.dv["STEER_STATUS"]["STEER_STATUS"])
 
     self.brake_error = False
@@ -236,8 +250,16 @@ class CarState(CarStateBase):
     else:
       self.park_brake = 0  # TODO
 
-    gear = int(cp.vl[self.gearbox_msg]["GEAR_SHIFTER"])
-    ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(gear, None))
+    if self.CP.transmissionType != TransmissionType.manual:
+      gear = int(cp.vl[self.gearbox_msg]["GEAR_SHIFTER"])
+      ret.gearShifter = self.parse_gear_shifter(self.shifter_values.get(gear, None))
+    else:
+      if bool(cp.vl["GAS_PEDAL_2"]['NEUTRAL']):
+        ret.gearShifter = 'neutral'
+      elif bool(cp.vl["SCM_FEEDBACK"]['REVERSE']):
+        ret.gearShifter = 'reverse'
+      else:
+        ret.gearShifter = 'drive'
 
     if self.CP.enableGasInterceptor:
       ret.gas = (cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"] + cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]) / 2.
@@ -283,6 +305,11 @@ class CarState(CarStateBase):
     if self.CP.carFingerprint in (CAR.PILOT, CAR.PASSPORT, CAR.RIDGELINE):
       if ret.brake > 0.1:
         ret.brakePressed = True
+
+    if self.CP.transmissionType == TransmissionType.manual:
+      ret.clutchPressed = bool(cp.vl["GAS_PEDAL_2"]["CLUTCH_MAIN"] or cp.vl["GAS_PEDAL_2"]["CLUTCH_ACC"])
+    else:
+      ret.clutchPressed = False
 
     # TODO: discover the CAN msg that has the imperial unit bit for all other cars
     if self.CP.carFingerprint in (CAR.CIVIC, ):

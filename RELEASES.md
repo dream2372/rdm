@@ -1,5 +1,6 @@
 Version 0.8.13.1 (2022-04-27)
 ========================
+ * Note: This is the LAST update for C2 and Accord Manual
  * NEOS 20: improved reliability
 
 Version 0.8.13 (2022-02-18)
