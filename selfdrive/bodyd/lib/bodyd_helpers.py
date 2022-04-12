@@ -21,7 +21,7 @@ def get_fingerprint():
     print('bodyd fp by fixed env')
     CP.carFingerprint = fixed_fingerprint
   else:
-    while len(CP.carFingerprint) == 0 or 'mock' in CP.carFingerprint:
+    while len(CP.carFingerprint) == 0 or 'mock' in CP.carFingerprint or not CP.flags & 0x64:
       cp_sock.update()
       cp, cp_cache = p.get("CarParams"), p.get("CarParamsCache")
       if cp is not None:
@@ -31,10 +31,11 @@ def get_fingerprint():
         print('bodyd fp by CarParamsCache')
         CP = car.CarParams.from_bytes(cp_cache)
       else:
+        print('bodyd fp by carParams socket')
         if cp_sock.updated['carParams']:
           CP = cp_sock['carParams']
-
-
+      if not CP.flags & 0x64:
+        print('body CAN not detected. Restart the car.')
   print(CP.carFingerprint)
   return CP
 
