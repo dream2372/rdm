@@ -54,6 +54,12 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
       "../assets/offroad/icon_metric.png",
     },
     {
+      "AF_EnableLogging",
+      "Enable Recording and Uploading",
+      "Record and upload drive video and data. Rebooting is required after toggling.",
+      "../assets/offroad/icon_map.png",
+    },
+    {
       "RecordFront",
       "Record and Upload Driver Camera",
       "Upload data from the driver facing camera and help improve the driver monitoring algorithm.",

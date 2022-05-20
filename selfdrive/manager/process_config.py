@@ -2,8 +2,10 @@ import os
 
 from selfdrive.hardware import EON, TICI, PC
 from selfdrive.manager.process import PythonProcess, NativeProcess, DaemonProcess
+from common.params import Params
 
 WEBCAM = os.getenv("USE_WEBCAM") is not None
+ENABLE_LOGGING = Params().get("AF_EnableLogging") == b"1"
 
 procs = [
   DaemonProcess("manage_athenad", "selfdrive.athena.manage_athenad", "AthenadPid"),
@@ -12,7 +14,7 @@ procs = [
   NativeProcess("clocksd", "selfdrive/clocksd", ["./clocksd"]),
   NativeProcess("dmonitoringmodeld", "selfdrive/modeld", ["./dmonitoringmodeld"], enabled=(not PC or WEBCAM), driverview=True),
   NativeProcess("logcatd", "selfdrive/logcatd", ["./logcatd"]),
-  NativeProcess("loggerd", "selfdrive/loggerd", ["./loggerd"]),
+  NativeProcess("loggerd", "selfdrive/loggerd", ["./loggerd"], enabled=ENABLE_LOGGING),
   NativeProcess("modeld", "selfdrive/modeld", ["./modeld"]),
   NativeProcess("navd", "selfdrive/ui/navd", ["./navd"], enabled=(PC or TICI), persistent=True),
   NativeProcess("proclogd", "selfdrive/proclogd", ["./proclogd"]),
@@ -35,7 +37,7 @@ procs = [
   PythonProcess("timezoned", "selfdrive.timezoned", enabled=TICI, persistent=True),
   PythonProcess("tombstoned", "selfdrive.tombstoned", enabled=not PC, persistent=True),
   PythonProcess("updated", "selfdrive.updated", enabled=not PC, persistent=True),
-  PythonProcess("uploader", "selfdrive.loggerd.uploader", persistent=True),
+  PythonProcess("uploader", "selfdrive.loggerd.uploader", enabled=ENABLE_LOGGING, persistent=True),
   PythonProcess("statsd", "selfdrive.statsd", persistent=True),
   PythonProcess("bodyd", "selfdrive.bodyd.bodyd", persistent=True),
 

@@ -201,7 +201,7 @@ class NativeProcess(ManagerProcess):
     if self.shutting_down:
         self.stop()
 
-    if self.proc is not None:
+    if self.proc is not None or not self.enabled:
       return
 
     cwd = os.path.join(BASEDIR, self.cwd)
@@ -233,7 +233,7 @@ class PythonProcess(ManagerProcess):
     if self.shutting_down:
         self.stop()
 
-    if self.proc is not None:
+    if self.proc is not None or not self.enabled:
       return
 
     cloudlog.info(f"starting python {self.module}")
@@ -303,4 +303,3 @@ def ensure_running(procs: ValuesView[ManagerProcess], started: bool, driverview:
       p.stop(block=False)
 
     p.check_watchdog(started)
-
