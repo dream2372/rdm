@@ -229,13 +229,21 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.2], [0.06]]
       tire_stiffness_factor = 0.677
 
-    elif candidate == CAR.ODYSSEY:
-      stop_and_go = False
+    elif candidate in (CAR.ODYSSEY, CAR.ODYSSEY_BOSCH):
+      stop_and_go = candidate == CAR.ODYSSEY_BOSCH
+      if stop_and_go and not ret.openpilotLongitudinalControl:
+        # The Bosch radar forwards steering commands to the EPS if vehicle conditions are acceptable (speed, wiper usage, etc). LCA engages at 45mph and disengages at 36mph.
+        ret.minSteerSpeed = 36 * CV.MPH_TO_MS
       ret.mass = 4471. * CV.LB_TO_KG + STD_CARGO_KG
       ret.wheelbase = 3.00
       ret.centerToFront = ret.wheelbase * 0.41
       ret.steerRatio = 14.35  # as spec
-      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
+      if candidate == CAR.ODYSSEY_BOSCH:
+        # The radar clips anything higher than 3840. Slow 4sec ramp at the entry point. About 1sec at the exit.
+        # TODO: Can the EPS apply torque over 3840 with OP long?
+        ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 3840], [0, 3840]]
+      else:
+        ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
       tire_stiffness_factor = 0.82
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.28], [0.08]]
 
