@@ -257,7 +257,7 @@ class Controls:
       else:
         safety_mismatch = pandaState.safetyModel not in IGNORED_SAFETY_MODES
 
-      if safety_mismatch or self.mismatch_counter >= 200:
+      if not REPLAY and (safety_mismatch or self.mismatch_counter >= 200):
         self.events.add(EventName.controlsMismatch)
 
       if log.PandaState.FaultType.relayMalfunction in pandaState.faults:
@@ -329,10 +329,11 @@ class Controls:
       if self.sm['liveLocationKalman'].excessiveResets:
         self.events.add(EventName.localizerMalfunction)
 
-      # Check if all manager processes are running
-      not_running = {p.name for p in self.sm['managerState'].processes if not p.running}
-      if self.sm.rcv_frame['managerState'] and (not_running - IGNORE_PROCESSES):
-        self.events.add(EventName.processNotRunning)
+      if not REPLAY:
+        # Check if all manager processes are running
+        not_running = {p.name for p in self.sm['managerState'].processes if not p.running}
+        if self.sm.rcv_frame['managerState'] and (not_running - IGNORE_PROCESSES):
+          self.events.add(EventName.processNotRunning)
 
     # Only allow engagement with brake pressed when stopped behind another stopped car
     speeds = self.sm['longitudinalPlan'].speeds
