@@ -36,7 +36,7 @@ class CarInterface(CarInterfaceBase):
     ret.radarOffCan = True
     ret.enableGasInterceptor = 0x201 in fingerprint[0]
     ret.openpilotLongitudinalControl = ret.enableGasInterceptor
-    ret.pcmCruise = not ret.enableGasInterceptor
+    ret.pcmCruise = True
 
     # Certain Hondas have an extra steering sensor at the bottom of the steering rack,
     # which improves controls quality as it removes the steering column torsion from feedback.
@@ -94,79 +94,33 @@ class CarInterface(CarInterfaceBase):
     # TODO: Discover more B-CAN frame timing
     ret.canValid = self.cp.can_valid
 
-    buttonEvents = []
-
-    if self.CS.cruise_buttons != self.CS.prev_cruise_buttons:
-      be = car.CarState.ButtonEvent.new_message()
-      be.type = ButtonType.unknown
-      if self.CS.cruise_buttons != 0:
-        be.pressed = True
-        but = self.CS.cruise_buttons
-      else:
-        be.pressed = False
-        but = self.CS.prev_cruise_buttons
-      if but == CruiseButtons.RES_ACCEL:
-        be.type = ButtonType.accelCruise
-      elif but == CruiseButtons.DECEL_SET:
-        be.type = ButtonType.decelCruise
-      elif but == CruiseButtons.CANCEL:
-        be.type = ButtonType.cancel
-      elif but == CruiseButtons.MAIN:
-        be.type = ButtonType.altButton3
-      buttonEvents.append(be)
-
-    if self.CS.cruise_setting != self.CS.prev_cruise_setting:
-      be = car.CarState.ButtonEvent.new_message()
-      be.type = ButtonType.unknown
-      if self.CS.cruise_setting != 0:
-        be.pressed = True
-        but = self.CS.cruise_setting
-      else:
-        be.pressed = False
-        but = self.CS.prev_cruise_setting
-      if but == 1:
-        be.type = ButtonType.altButton1
-      # TODO: more buttons?
-      buttonEvents.append(be)
-    ret.buttonEvents = buttonEvents
-
     # events
     events = self.create_common_events(ret, pcm_enable=False)
-    if self.CS.brake_error:
-      events.add(EventName.brakeUnavailable)
-    if self.CS.park_brake:
-      events.add(EventName.parkBrake)
+    #if self.CS.park_brake:
+    #  events.add(EventName.parkBrake)
 
-    if self.CP.pcmCruise and ret.vEgo < self.CP.minEnableSpeed:
-      events.add(EventName.belowEngageSpeed)
+    # engage stock cruise
+    # disengage cruise with stalk:
+    # when disengaging:
+    # - gas pressed = set speed to current speed until gas is released
+    # - not pressed = resume the last set speed
+    # disengage op with gas or brake
+    buttonEvents = []
+    be = car.CarState.ButtonEvent.new_message()
+    be.type = ButtonType.unknown
+    be.pressed = False
 
-    if self.CP.pcmCruise:
-      # we engage when pcm is active (rising edge)
-      if ret.cruiseState.enabled and not self.CS.out.cruiseState.enabled:
-        events.add(EventName.pcmEnable)
-      elif not ret.cruiseState.enabled and (c.actuators.accel >= 0. or not self.CP.openpilotLongitudinalControl):
-        # it can happen that car cruise disables while comma system is enabled: need to
-        # keep braking if needed or if the speed is very low
-        if ret.vEgo < self.CP.minEnableSpeed + 2.:
-          # non loud alert if cruise disables below 25mph as expected (+ a little margin)
-          events.add(EventName.speedTooLow)
-        else:
-          events.add(EventName.cruiseDisabled)
-    if self.CS.CP.minEnableSpeed > 0 and ret.vEgo < 0.001:
-      events.add(EventName.manualRestart)
+    # need to watch for last brakePressed?
+    if not ret.cruiseState.enabled and self.CS.out.cruiseState.enabled and not ret.brakePressed:
+      events.add(EventName.buttonEnable)
+      if ret.gasPressed:
+        be.type = ButtonType.decelCruise
+      else:
+        be.type = ButtonType.accelCruise
+    if ret.cruiseState.enabled and not self.CS.out.cruiseState.enabled:
+      events.add(EventName.buttonCancel)
 
-    # handle button presses
-    for b in ret.buttonEvents:
-
-      # do enable on both accel and decel buttons
-      if b.type in (ButtonType.accelCruise, ButtonType.decelCruise) and not b.pressed:
-        if not self.CP.pcmCruise:
-          events.add(EventName.buttonEnable)
-
-      # do disable on button down
-      if b.type == ButtonType.cancel and b.pressed:
-        events.add(EventName.buttonCancel)
-
+    ret.buttonEvents = buttonEvents
     ret.events = events.to_msg()
 
     self.CS.out = ret.as_reader()

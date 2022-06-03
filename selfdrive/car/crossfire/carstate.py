@@ -60,19 +60,13 @@ def get_can_signals(CP):
     ("LR", "WHEELS_LEFT"),
     ("RF", "WHEELS_RIGHT"),
     ("RR", "WHEELS_RIGHT"),
-    # ("STEER_ANGLE", "STEERING_SENSORS"),
-    # ("STEER_ANGLE_RATE", "STEERING_SENSORS"),
-    # ("STEER_TORQUE_SENSOR", "STEER_STATUS"),
     ("GEAR_ASCII", "TRANS_1"),
     ("USER_BRAKE_1", "BRAKE_1"),
     ("USER_BRAKE_2", "BRAKE_1"),
-    # ("CRUISE_BUTTONS", "SCM_BUTTONS"),
-    # ("ESP_DISABLED", "VSA_STATUS"),
-    ("USER_GAS", "GAS_1"),
-    # ("CRUISE_SETTING", "SCM_BUTTONS"),
-    # ("CRUISE_SPEED_PCM", "CRUISE"),
-    # ("CRUISE_SPEED_OFFSET", "CRUISE_PARAMS"),
     ("DRIVERS_DOOR_OPEN", "BCM_1"),
+    ("CRUISE_ON", "GAS_1"),
+    ("STEER_ANGLE","STEER_1"),
+    ("STEER_DIR_FACTOR", "STEER_1"),
   ]
 
   checks = [
@@ -82,11 +76,8 @@ def get_can_signals(CP):
     ("GAS_1", 50),
     ("WHEELS_LEFT", 50),
     ("WHEELS_RIGHT", 50),
+    ("STEER_1", 50),
   ]
-
-  # signals += [("CRUISE_SPEED_PCM", "CRUISE"),
-  #             ("CRUISE_SPEED_OFFSET", "CRUISE_PARAMS")]
-
 
   # add gas interceptor reading if we are using it
   if CP.enableGasInterceptor:
@@ -103,11 +94,9 @@ class CarState(CarStateBase):
     can_define = CANDefine(DBC[CP.carFingerprint]["pt"])
     self.frame = 0
 
-    self.brake_error = False
-    self.brake_switch_prev = False
-    self.brake_switch_active = False
-    self.cruise_setting = 0
-    self.v_cruise_pcm_prev = 0
+    self.cruise_speed_prev = 0
+
+    self.steer_angle_prev = 0.
 
     self.lf_prev = 0.
     self.lr_prev = 0.
@@ -121,10 +110,6 @@ class CarState(CarStateBase):
     # car params
     v_weight_v = [0., 1.]  # don't trust smooth speed at low values to avoid premature zero snapping
     v_weight_bp = [1., 6.]   # smooth blending, below ~0.6m/s the smooth speed snaps to zero
-
-    # update prevs, update must run once per loop
-    self.prev_cruise_buttons = self.cruise_buttons
-    self.prev_cruise_setting = self.cruise_setting
 
     # ******************* parse out can *******************
     ret.doorOpen = bool(cp.vl["BCM_1"]["DRIVERS_DOOR_OPEN"])
@@ -149,30 +134,29 @@ class CarState(CarStateBase):
     # v_weight = interp(v_wheel, v_weight_bp, v_weight_v)
     # ret.vEgoRaw = (1. - v_weight) * cp.vl["ENGINE_DATA"]["XMISSION_SPEED"] * CV.KPH_TO_MS * self.CP.wheelSpeedFactor + v_weight * v_wheel
     ret.vEgo, ret.aEgo = self.update_speed_kf(v_wheel)
-    #
-    # ret.steeringAngleDeg = cp.vl["STEERING_SENSORS"]["STEER_ANGLE"]
-    # ret.steeringRateDeg = cp.vl["STEERING_SENSORS"]["STEER_ANGLE_RATE"]
-
-    # self.cruise_setting = cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"]
-    # self.cruise_buttons = cp.vl["SCM_BUTTONS"]["CRUISE_BUTTONS"]
-
-    self.park_brake = 0  # TODO
+    ret.steeringAngleDeg = cp.vl["STEER_1"]["STEER_ANGLE"] * cp.vl["STEER_1"]["STEER_DIR_FACTOR"]
 
     gear = ascii(cp.vl["TRANS_1"]["GEAR_ASCII"])
     ret.gearShifter = self.parse_gear_shifter(gear)
 
-    if self.CP.enableGasInterceptor:
-      ret.gas = (cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"] + cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]) / 2.
-    else:
-      ret.gas = 0
-    ret.gasPressed = ret.gas > 1e-5
+    ret.gas = (cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"] + cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]) / 2.
+    ret.gasPressed = ret.gas > -50
 
-    # ret.steeringPressed = abs(ret.steeringTorque) > STEER_THRESHOLD.get(self.CP.carFingerprint, 1200)
-    # ret.cruiseState.speed = cp.vl["CRUISE"]["CRUISE_SPEED_PCM"] * CV.KPH_TO_MS
+    ret.steeringPressed = ret.steeringAngleDeg != self.steer_angle_prev
     ret.brakePressed = bool(cp.vl["BRAKE_1"]["USER_BRAKE_1"]) or bool(cp.vl["BRAKE_1"]["USER_BRAKE_2"])
     ret.brake = int(ret.brakePressed)
-    # ret.cruiseState.enabled = cp.vl["POWERTRAIN_DATA"]["ACC_STATUS"] != 0
+    ret.cruiseState.enabled = cp.vl["GAS_1"]["CRUISE_ON"] != 0
     ret.cruiseState.available = True
+
+    # if gas override while cruise is engaged, set speed = vego
+    if ret.cruiseState.enabled:
+      if ret.gasPressed:
+        ret.cruiseState.speed = ret.vEgo
+      else:
+        ret.cruiseState.speed = self.cruise_speed_prev
+
+    self.cruise_speed_prev = ret.cruiseState.speed
+    self.steer_angle_prev = ret.steeringAngleDeg
 
     return ret
 
