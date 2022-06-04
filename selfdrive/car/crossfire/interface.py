@@ -36,7 +36,7 @@ class CarInterface(CarInterfaceBase):
     ret.radarOffCan = True
     ret.enableGasInterceptor = 0x201 in fingerprint[0]
     ret.openpilotLongitudinalControl = ret.enableGasInterceptor
-    ret.pcmCruise = True
+    ret.pcmCruise = False
 
     # Certain Hondas have an extra steering sensor at the bottom of the steering rack,
     # which improves controls quality as it removes the steering column torsion from feedback.
@@ -59,6 +59,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 0], [0, 0]]
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.], [0.]]
       tire_stiffness_factor = 1.
+      ret.wheelSpeedFactor = 0.815
 
     else:
       raise ValueError(f"unsupported car {candidate}")
