@@ -115,6 +115,7 @@ class CarState(CarStateBase):
   def update(self, cp, cp_cam, cp_body):
     ret = car.CarState.new_message()
     self.frame += 1
+
     # car params
     v_weight_v = [0., 1.]  # don't trust smooth speed at low values to avoid premature zero snapping
     v_weight_bp = [1., 6.]   # smooth blending, below ~0.6m/s the smooth speed snaps to zero
@@ -147,7 +148,7 @@ class CarState(CarStateBase):
     gps = messaging.recv_sock(self.gps)
     if gps is not None:
       gps_speed = gps.gpsLocationExternal.speed
-      print(gps_speed - ret.vEgo)
+      # print(gps_speed - ret.vEgo)
 
     gear = chr(int(cp.vl["TRANS_1"]["GEAR_ASCII"]))
     # force disengagement if we've overridden the gear, are in manual mode, or ESP is off
@@ -157,8 +158,8 @@ class CarState(CarStateBase):
       gear = 'D'
     ret.gearShifter = self.parse_gear_shifter(gear)
 
-    ret.gas = (cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"] + cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]) / 2.
-    ret.gasPressed = ret.gas > -50
+    ret.gas = (cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"] + cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]) / 2
+    ret.gasPressed = ret.gas > 5
 
     # crude. may go false negative
     ret.steeringPressed = ret.steeringAngleDeg != self.steer_angle_prev
