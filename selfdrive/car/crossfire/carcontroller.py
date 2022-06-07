@@ -22,8 +22,8 @@ def compute_gb_honda_nidec(accel, speed):
   creep_brake_value = 0.15
   if speed < creep_speed:
     creep_brake = (creep_speed - speed) / creep_speed * creep_brake_value
-  gb = float(accel) / 4.8 - creep_brake
-  return clip(gb, 0.0, 1.0), clip(-gb, 0.0, 1.0)
+  gb = float(accel) #/ 4.8 - creep_brake
+  return clip(gb, 0.0, 0.6), clip(-gb, 0.0, 0.0)
 
 
 def compute_gas_brake(accel, speed, fingerprint):
@@ -104,7 +104,7 @@ class CarController():
       # Sending non-zero gas when OP is not enabled will cause the PCM not to respond to throttle as expected
       # when you do enable.
       if active:
-        self.gas = clip(gas_mult * (gas - brake + wind_brake*3/4), 0., 1.)
+        self.gas = gas#clip(gas_mult * (gas - brake + wind_brake*3/4), 0., 1.)
       else:
         self.gas = 0.0
       can_sends.append(create_gas_interceptor_command(self.packer, self.gas, idx))

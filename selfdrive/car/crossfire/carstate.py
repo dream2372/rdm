@@ -67,6 +67,10 @@ def get_can_signals(CP):
     ("LR", "WHEELS_LEFT"),
     ("RF", "WHEELS_RIGHT"),
     ("RR", "WHEELS_RIGHT"),
+    ("SPD_1", "SPEED_1"),
+    ("SPD_2", "SPEED_1"),
+    ("SPD_3", "SPEED_1"),
+    ("CRUISE_AVAILABLE", "SPEED_1"),
     ("GEAR_ASCII", "TRANS_1"),
     ("USER_BRAKE_1", "BRAKE_1"),
     ("USER_BRAKE_2", "BRAKE_1"),
@@ -74,6 +78,7 @@ def get_can_signals(CP):
     ("CRUISE_ON", "GAS_1"),
     ("STEER_ANGLE","STEER_1"),
     ("STEER_DIR", "STEER_1"),
+    ("SHIFTER", "SHIFTER"),
   ]
 
   checks = [
@@ -84,6 +89,8 @@ def get_can_signals(CP):
     ("WHEELS_LEFT", 50),
     ("WHEELS_RIGHT", 50),
     ("STEER_1", 50),
+    ("SPEED_1", 50),
+    ("SHIFTER", 50),
   ]
 
   # add gas interceptor reading if we are using it
@@ -104,12 +111,12 @@ class CarState(CarStateBase):
     self.cruise_speed_prev = 0
     self.steer_angle_prev = 0.
 
-    self.LF_wheel = Wheel(TIRE_SIZE,WHEEL_UPDATE_FREQ)
-    self.RF_wheel = Wheel(TIRE_SIZE,WHEEL_UPDATE_FREQ)
-    self.LR_wheel = Wheel(TIRE_SIZE,WHEEL_UPDATE_FREQ)
-    self.RR_wheel = Wheel(TIRE_SIZE,WHEEL_UPDATE_FREQ)
+    #self.LF_wheel = Wheel(TIRE_SIZE,WHEEL_UPDATE_FREQ)
+    #self.RF_wheel = Wheel(TIRE_SIZE,WHEEL_UPDATE_FREQ)
+    #self.LR_wheel = Wheel(TIRE_SIZE,WHEEL_UPDATE_FREQ)
+    #self.RR_wheel = Wheel(TIRE_SIZE,WHEEL_UPDATE_FREQ)
 
-    self.gps = messaging.sub_sock('gpsLocationExternal')
+#    self.gps = messaging.sub_sock('gpsLocationExternal')
 
 
   def update(self, cp, cp_cam, cp_body):
@@ -128,27 +135,25 @@ class CarState(CarStateBase):
     ret.steerWarning = False
 
     ret.wheelSpeeds = car.CarState.WheelSpeeds.new_message()
-    if self.frame % 100 / (1 * .020):
-      ret.wheelSpeeds.fl = self.LF_wheel.update(int(cp.vl["WHEELS_LEFT"]["LF"]))
-      # ret.wheelSpeeds.fr = ret.wheelSpeeds.fl
-      # ret.wheelSpeeds.rl = ret.wheelSpeeds.fl
-      # ret.wheelSpeeds.rr = ret.wheelSpeeds.fl
-      ret.wheelSpeeds.fr = self.LR_wheel.update(int(cp.vl["WHEELS_LEFT"]["LR"]))
-      ret.wheelSpeeds.rl = self.RF_wheel.update(int(cp.vl["WHEELS_RIGHT"]["RF"]))
-      ret.wheelSpeeds.rr = self.RR_wheel.update(int(cp.vl["WHEELS_RIGHT"]["RR"]))
+    ret.wheelSpeeds.fl = (cp.vl["SPEED_1"]["SPD_1"] + cp.vl["SPEED_1"]["SPD_2"] + cp.vl["SPEED_1"]["SPD_3"]) / 3 * CV.KPH_TO_MS
+    ret.wheelSpeeds.fr = ret.wheelSpeeds.fl
+    ret.wheelSpeeds.rl = ret.wheelSpeeds.fl
+    ret.wheelSpeeds.rr = ret.wheelSpeeds.fl
+      #ret.wheelSpeeds.fr = self.LR_wheel.update(int(cp.vl["WHEELS_LEFT"]["LR"]))
+      #ret.wheelSpeeds.rl = self.RF_wheel.update(int(cp.vl["WHEELS_RIGHT"]["RF"]))
+      #ret.wheelSpeeds.rr = self.RR_wheel.update(int(cp.vl["WHEELS_RIGHT"]["RR"]))
       # print(ret.wheelSpeeds.fl)
-    v_wheel = (ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr) / 4.0
+    v_wheel = ret.wheelSpeeds.fl #(ret.wheelSpeeds.fl + ret.wheelSpeeds.fr + ret.wheelSpeeds.rl + ret.wheelSpeeds.rr) / 4.0
     # print(ret.wheelSpeeds.fl)
     # blend in transmission speed at low speed, since it has more low speed accuracy
     # v_weight = interp(v_wheel, v_weight_bp, v_weight_v)
     ret.vEgoRaw = self.CP.wheelSpeedFactor * v_wheel
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
-    ret.steeringAngleDeg = -cp.vl["STEER_1"]["STEER_ANGLE"] if cp.vl["STEER_1"]["STEER_DIR"] else cp.vl["STEER_1"]["STEER_ANGLE"]
+    ret.steeringAngleDeg = cp.vl["STEER_1"]["STEER_ANGLE"] if cp.vl["STEER_1"]["STEER_DIR"] else -cp.vl["STEER_1"]["STEER_ANGLE"]
 
-    gps = messaging.recv_sock(self.gps)
-    if gps is not None:
-      gps_speed = gps.gpsLocationExternal.speed
-      # print(gps_speed - ret.vEgo)
+#    gps = messaging.recv_sock(self.gps)
+#    if gps is not None:
+#      gps_speed = gps.gpsLocationExternal.speed
 
     gear = chr(int(cp.vl["TRANS_1"]["GEAR_ASCII"]))
     # force disengagement if we've overridden the gear, are in manual mode, or ESP is off
@@ -159,27 +164,22 @@ class CarState(CarStateBase):
     ret.gearShifter = self.parse_gear_shifter(gear)
 
     ret.gas = (cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS"] + cp.vl["GAS_SENSOR"]["INTERCEPTOR_GAS2"]) / 2
-    ret.gasPressed = ret.gas > 5
+    ret.gasPressed = ret.gas > 5.
 
     # crude. may go false negative
     ret.steeringPressed = ret.steeringAngleDeg != self.steer_angle_prev
 
     ret.brakePressed = bool(cp.vl["BRAKE_1"]["USER_BRAKE_1"]) or bool(cp.vl["BRAKE_1"]["USER_BRAKE_2"])
     ret.brake = int(ret.brakePressed)
-    # hack
-    ret.cruiseState.enabled = bool(-cp.vl["GAS_1"]["CRUISE_ON"])
+
+    ret.cruiseState.enabled = bool(cp.vl["GAS_1"]["CRUISE_ON"])
     ret.cruiseState.available = True
 
-    # # if gas override while cruise is engaged, set speed = vego
-    # if ret.cruiseState.enabled:
-    #   if ret.gasPressed:
-    #     ret.cruiseState.speed = ret.vEgo
-    #   else:
-    #     ret.cruiseState.speed = self.cruise_speed_prev
-
-    # self.cruise_speed_prev = ret.cruiseState.speed
+    shifter = int(cp.vl["SHIFTER"]["SHIFTER"])
+    print(shifter)
+    self.accelResume = (shifter == 10 and ret.vEgo < (8 *CV.MPH_TO_MS)) or (shifter == 9 and ret.vEgo > (40. * CV.MPH_TO_MS))
     self.steer_angle_prev = ret.steeringAngleDeg
-
+    print(self.accelResume)
     return ret
 
   def get_can_parser(self, CP):

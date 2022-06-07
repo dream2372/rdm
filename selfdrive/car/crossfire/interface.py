@@ -46,25 +46,25 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.pid.kiBP, ret.lateralTuning.pid.kpBP = [[0.], [0.]]
     ret.lateralTuning.pid.kf = 0.00006  # conservative feed-forward
 
-    ret.longitudinalTuning.kpV = [0.25]
-    ret.longitudinalTuning.kiV = [0.05]
-    ret.longitudinalActuatorDelayUpperBound = 0.5 # s
+    ret.longitudinalTuning.kpV = [0.2]
+    ret.longitudinalTuning.kiV = [0.1]
+    ret.longitudinalActuatorDelayUpperBound = 0.3 # s
 
     if candidate == CAR.CROSSFIRE:
       stop_and_go = True
       ret.mass = CivicParams.MASS
       ret.wheelbase = CivicParams.WHEELBASE
       ret.centerToFront = CivicParams.CENTER_TO_FRONT
-      ret.steerRatio = 15.38  # 10.93 is end-to-end spec
+      ret.steerRatio = 16.31
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 0], [0, 0]]
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.], [0.]]
       tire_stiffness_factor = 1.
-      ret.wheelSpeedFactor = 0.815
+      ret.wheelSpeedFactor = 1.09
 
     else:
       raise ValueError(f"unsupported car {candidate}")
 
-    ret.minEnableSpeed = -1. if (stop_and_go or ret.enableGasInterceptor) else 100
+    ret.minEnableSpeed = 21.;
 
     # TODO: get actual value, for now starting with reasonable value for
     # civic and scaling by mass and wheelbase
@@ -114,13 +114,15 @@ class CarInterface(CarInterfaceBase):
     # need to watch for last brakePressed?
     if not ret.cruiseState.enabled and self.CS.out.cruiseState.enabled and not ret.brakePressed:
       events.add(EventName.buttonEnable)
-      if ret.gasPressed:
-        be.type = ButtonType.decelCruise
-      else:
-        be.type = ButtonType.accelCruise
+      be.type = ButtonType.decelCruise
+      buttonEvents.append(be)
+    if self.CS.accelResume:
+      be.type = ButtonType.accelCruise
+      buttonEvents.append(be)
+      be.pressed = True
     if ret.cruiseState.enabled and not self.CS.out.cruiseState.enabled:
       events.add(EventName.buttonCancel)
-
+    print(buttonEvents)
     ret.buttonEvents = buttonEvents
     ret.events = events.to_msg()
 

@@ -1,6 +1,8 @@
 # functions common among cars
 from cereal import car
 from common.numpy_fast import clip
+import binascii
+
 
 # kg of standard extra cargo to count for drive, gas, etc...
 STD_CARGO_KG = 136.
@@ -107,13 +109,10 @@ def create_gas_interceptor_command(packer, gas_amount, idx):
     "ENABLE": enable,
     "COUNTER_COMMA": idx & 0xF,
   }
-
   if enable:
     values["GAS_COMMAND"] = gas_amount * 255.
     values["GAS_COMMAND2"] = gas_amount * 255.
-
   dat = packer.make_can_msg("GAS_COMMAND", 0, values)[2]
-
   checksum = crc8_pedal(dat[:-1])
   values["CHECKSUM_COMMA"] = checksum
 
