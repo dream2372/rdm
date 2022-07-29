@@ -93,6 +93,7 @@ class Body():
 
   def __init__(self, CP=None, fingerprint=None, cache=None):
     self.cp_body = get_body_parser(CP)
+    self.CP = CP
 
   def update(self, CP, cp_body):
     ret = body.BodyState.new_message()
@@ -120,11 +121,11 @@ class Body():
     # ret.backRightWindow = Window.closed if bool(cp_body.vl["FRONT_WINDOWS"]["LF_WINDOWSTATE"]) else Window.open
 
     # Accord reports sunroof state on CAN
-    if CP.carFingerprint in BODY_SUNROOF_ON_CAN:
+    if self.CP.carFingerprint in BODY_SUNROOF_ON_CAN:
       ret.sunroof = Window.closed if bool(cp_body.vl["FRONT_WINDOWS"]["SUNROOF_CLOSED"]) else Window.open
 
     # bsm
-    if CP.enableBsm:
+    if self.CP.enableBsm:
       ret.leftBlindSpot.warning = bool(cp_body.vl["BSM_STATUS_LEFT"]["BSM_ALERT"])
       ret.leftBlindSpot.mode = int(cp_body.vl["BSM_STATUS_LEFT"]["BSM_MODE"])
       ret.rightBlindSpot.warning = bool(cp_body.vl["BSM_STATUS_RIGHT"]["BSM_ALERT"])
