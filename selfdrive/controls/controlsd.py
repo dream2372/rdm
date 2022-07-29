@@ -601,8 +601,7 @@ class Controls:
     if hudControl.rightLaneDepart or hudControl.leftLaneDepart:
       self.events.add(EventName.ldw)
 
-    if self.IocControl:
-      if self.iocLockout:
+    if self.IocControl and self.iocLockout:
         print('controlsd ioc lockout')
         self.events.add(EventName.canError)
 
@@ -623,7 +622,7 @@ class Controls:
       self.last_actuators, can_sends = self.CI.apply(CC)
 
       if self.IocControl:
-        ioc_out, self.iocLockout = self.CI.IOC.update(self.sm.frame, self.CI.CS, self.sm['lateralPlan'].desire, self.sm['driverMonitoringState'])
+        ioc_out, self.iocLockout = self.CI.IOC.update(self.sm.frame, self.CI.CS, self.sm['lateralPlan'].desire, self.sm['driverMonitoringState'], latControl=lac_log)
         if ioc_out:
           can_sends.extend(ioc_out)
 
