@@ -96,9 +96,17 @@ TogglesPanel::TogglesPanel(SettingsWindow *parent) : ListWidget(parent) {
   toggles.push_back({
     "AF_TurnSignalControl",
     "Automatic turn signal control",
-    "openpilot will control the car's turn signals during assisted lane changes. Manually initiate a lane change and then return the control stalk to the neutral position. openpilot will turn off the turn signal at the end of the lane change. Autofocuser body harness or equivalent is required.",
+    "openpilot will control the car's turn signals during assisted lane changes. Manually initiate a lane change and then return the control stalk to the neutral position. openpilot will turn off the turn signal at the end of the lane change. Body Harness or equivalent is required.",
     "../assets/offroad/icon_auto_turn_signal.png",
   });
+
+  toggles.push_back({
+    "AF_CorneringFogLights",
+    "Automatic fog lamp control",
+    "Utilize your vehicle's fog lamps as cornering lights. Activates below 30 MPH when the steering wheel or the desired steering wheel angle is greater than 20*. Body Harness or equivalent is required.",
+    "../assets/offroad/icon_auto_turn_signal.png",
+  });
+
   toggles.push_back({
     "AF_OffroadCAN",
     "Cloud control when the car is off",
