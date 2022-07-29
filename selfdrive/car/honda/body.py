@@ -138,7 +138,7 @@ class Body():
     ret.lighting.hazards = bool(cp_body.vl["LIGHTING_3"]["HAZARDS_ENABLE"])
     ret.lighting.parking = bool(cp_body.vl["LIGHTING_4"]["PARKING_LIGHTS"])
     ret.lighting.lowBeam = bool(cp_body.vl["LIGHTING_STALK"]["LOW"])
-    ret.lighting.highBeams = bool(cp_body.vl["LIGHTING_1"]["HIGH_BEAM"])
+    ret.lighting.highBeam = bool(cp_body.vl["LIGHTING_1"]["HIGH_BEAM"])
     ret.lighting.reverse = bool(cp_body.vl["LIGHTING_3"]["REVERSE"])
     # TODO: find real brake lights, not the pedal
     # ret.lighting.brake = bool(cp_body.vl["LIGHTING_3"]["BRAKES"])

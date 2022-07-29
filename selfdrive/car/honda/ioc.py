@@ -8,7 +8,8 @@ from common.params import Params
 
 # 10ms is a typical response time
 MAX_SEND_CNT = 4 * 10
-MIN_FOG_ANGLE = 20. # deg
+MIN_FOG_ANGLE = 35. # deg
+TS_FOG_DELAY = 200 # steps
 
 Desire = log.LateralPlan.Desire
 IoCState = body.BodyState.IocState.State
@@ -36,16 +37,15 @@ class IOCController(IOC):
   def __init__(self, dbc_name, CP):
     p = Params()
     self.do_fogs = bool(p.get_bool('AF_CorneringFogLights'))
-    self.state = IoCState.stopping
+    self.state = IoCState.waiting
     self.sendCnt = 0
     self.packer = CANPacker(dbc_name)
 
     # adaptive signal timing
     # self.turnSignalOnPeriod = 0.0
     # self.turnSignalOffPeriod = 0.0
-    self.fog = False
     self.fog_frame = 0
-    self.fog_started = False
+    self.fog_delay = False
 
   def append(self, idx, cmd_type, cmd_id, commands):
     if idx % 10 == 0:
@@ -72,24 +72,28 @@ class IOCController(IOC):
 
     # fog lamps
     if self.do_fogs:
-      steer_exceeded = (abs(latControl.steeringAngleDesiredDeg) or abs(latControl.steeringAngleDeg)) >= MIN_FOG_ANGLE
+      steer_exceeded = abs(latControl.steeringAngleDesiredDeg) >= MIN_FOG_ANGLE or abs(latControl.steeringAngleDeg) >= MIN_FOG_ANGLE
       # fix the low beam
-      lighting_acceptable = CS.lighting_auto and not CS.lighting_fog
-      self.fog = steer_exceeded and lighting_acceptable and not latControl.active and not CS.out.standstill and CS.out.vEgo <= (30. * CV.MPH_TO_MS)
-      if self.fog:
-        self.fog_frame = frame
-        if not self.fog_started:
-          self.fog_started = True
+      lighting_acceptable = CS.lighting_auto and not CS.lighting_fog #and CS.lighting_low
+      override = CS.lighting_fog or not CS.lighting_auto
+      fog = steer_exceeded and lighting_acceptable and not latControl.active and not CS.out.standstill and CS.out.vEgo <= (30. * CV.MPH_TO_MS)
 
       # 2 second delay before shut off (avoids flashing)
-      if frame - self.fog_frame > 200:
-        self.state = IoCState.stopping
+      if fog:
+          self.fog_frame = frame
       else:
-        print('Delaying...', end=' ')
-      print(self.fog)
+        if frame - self.fog_frame > TS_FOG_DELAY or override:
+          self.fog_frame = 0
+          self.fog_delay = False
+          if self.state == IoCState.waiting:
+            print('cancelling due to:', end=' ')
+            if override:
+              print('override')
+            else:
+              print('timeout')
 
     # # TODO: check that our last command is the one the is being acknowledged (BD.BS.iocFeedback[0])
-    active = lateralDesire != Desire.none or (self.do_fogs and self.fog and not self.fog_started)
+    active = lateralDesire != Desire.none or (self.do_fogs and (fog or self.fog_delay))
 
     # ready the state machine to send
     if active and self.state == IoCState.idle:
@@ -97,8 +101,15 @@ class IOCController(IOC):
     if not active and self.state == IoCState.userOverride:
       self.state = IoCState.idle
 
-    if frame % 10 == 0 and self.state != 0:
-      print('state: ', end=''), print(self.state)
+    # if frame % 10 == 0:# and self.state != 0:
+    #   print('state: ', end=''), print(self.state)
+    #   print('active', end=' '), print(active)
+    #   print('fog', end=' '), print(fog)
+    #   print('fog_delay', end=' '), print(self.fog_delay)
+    #   print('frame', end=' '), print(frame)
+    #   print('fog_frame', end=' '), print(self.fog_frame)
+    #   print(' '), print(' ')
+
 
     # send the ioc command
     if self.state == IoCState.starting:
@@ -109,30 +120,35 @@ class IOCController(IOC):
         self.sendCnt +=1
         # TODO: check elapsed time since sent vs reply
         # TODO: combine this with the user override check
-        if self.fog and not self.fog_started:
-            self.append(frame, IOC.MsgType.Start, IOC.Command.FrontFogLamps, commands)
-            self.fog_started = True
+      if self.do_fogs:
+        if fog and not self.fog_delay:
+          print('Fogging...')
+          self.append(frame, IOC.MsgType.Start, IOC.Command.FrontFogLamps, commands)
+      else:
+        if lateralDesire in [Desire.turnLeft, Desire.laneChangeLeft, Desire.keepLeft]:
+          self.append(frame, IOC.MsgType.Start, IOC.Command.SignalLeft, commands)
+        elif lateralDesire in [Desire.turnRight, Desire.laneChangeRight, Desire.keepRight]:
+          self.append(frame, IOC.MsgType.Start, IOC.Command.SignalRight, commands)
         else:
-          if lateralDesire in [Desire.turnLeft, Desire.laneChangeLeft, Desire.keepLeft]:
-            self.append(frame, IOC.MsgType.Start, IOC.Command.SignalLeft, commands)
-          elif lateralDesire in [Desire.turnRight, Desire.laneChangeRight, Desire.keepRight]:
-            self.append(frame, IOC.MsgType.Start, IOC.Command.SignalRight, commands)
-          else:
-            pass
+          pass
 
     if not active and self.state in [IoCState.starting, IoCState.waiting]:
       self.state = IoCState.stopping
 
     # check for user override
     if self.state in [IoCState.starting, IoCState.waiting]:
-      if lateralDesire in [Desire.turnLeft, Desire.laneChangeLeft, Desire.keepLeft] and CS.out.rightBlinker or \
-        lateralDesire in [Desire.turnRight, Desire.laneChangeRight, Desire.keepRight] and CS.out.leftBlinker:
+      if (self.do_fogs and override) or \
+      lateralDesire in [Desire.turnLeft, Desire.laneChangeLeft, Desire.keepLeft] and CS.out.rightBlinker or \
+      lateralDesire in [Desire.turnRight, Desire.laneChangeRight, Desire.keepRight] and CS.out.leftBlinker:
         self.state = IoCState.userOverride
       if [Event.driverDistracted, Event.driverUnresponsive] in DM.events:
         self.state = IoCState.driverUnresponsive
 
+
     # waiting to cancel
     if self.state == IoCState.waiting:
+      if self.do_fogs and not self.fog_delay:
+        self.fog_delay = True
       if not active:
         self.state = IoCState.stopping
 
@@ -146,6 +162,7 @@ class IOCController(IOC):
       else:
         # This cancels ALL active tests per module
         self.sendCnt +=1
+        print('Cancelling...')
         self.append(frame, IOC.MsgType.Stop, IOC.Command.Cancel, commands)
 
     if self.sendCnt > 1:
