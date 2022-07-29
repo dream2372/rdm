@@ -1,11 +1,14 @@
 from selfdrive.car.honda.hondacan import bcm_io_over_can
 from cereal import log, body, car
 from opendbc.can.packer import CANPacker
+from selfdrive.config import Conversions as CV
+from common.params import Params
 
 # TODO: Make platform agnostic. Generate all of this file in openioc
 
 # 10ms is a typical response time
 MAX_SEND_CNT = 4 * 10
+MIN_FOG_ANGLE = 20. # deg
 
 Desire = log.LateralPlan.Desire
 IoCState = body.BodyState.IocState.State
@@ -20,6 +23,7 @@ class IOC():
     SignalRight = [0x0b, 0x0f]
     SignalHazards = [0x08, 0x0f]
     DomeLight = [0x02, 0x1e]
+    FrontFogLamps = [0x20, 0x0f]
 
   class MsgType():
     Start = 0x30
@@ -30,6 +34,8 @@ class IOC():
 
 class IOCController(IOC):
   def __init__(self, dbc_name, CP):
+    p = Params()
+    self.do_fogs = bool(p.get_bool('AF_CorneringFogLights'))
     self.state = IoCState.stopping
     self.sendCnt = 0
     self.packer = CANPacker(dbc_name)
@@ -37,13 +43,16 @@ class IOCController(IOC):
     # adaptive signal timing
     # self.turnSignalOnPeriod = 0.0
     # self.turnSignalOffPeriod = 0.0
+    self.fog = False
+    self.fog_frame = 0
+    self.fog_started = False
 
   def append(self, idx, cmd_type, cmd_id, commands):
     if idx % 10 == 0:
       return commands.append([cmd_type, cmd_id])
 
-  def update(self, frame, CS, LateralDesire, DM, BD=None, BS=None):
-    if CS is None or Desire is None or DM is None:
+  def update(self, frame, CS, lateralDesire, DM, BD=None, BS=None, latControl=None):
+    if CS is None or Desire is None or DM is None or latControl is None:
       return
 
     # Permanent lockout
@@ -60,8 +69,27 @@ class IOCController(IOC):
     # # TODO: support multiple commands
     ret = []
     commands = []
+
+    # fog lamps
+    if self.do_fogs:
+      steer_exceeded = (abs(latControl.steeringAngleDesiredDeg) or abs(latControl.steeringAngleDeg)) >= MIN_FOG_ANGLE
+      # fix the low beam
+      lighting_acceptable = CS.lighting_auto and not CS.lighting_fog
+      self.fog = steer_exceeded and lighting_acceptable and not latControl.active and not CS.out.standstill and CS.out.vEgo <= (30. * CV.MPH_TO_MS)
+      if self.fog:
+        self.fog_frame = frame
+        if not self.fog_started:
+          self.fog_started = True
+
+      # 2 second delay before shut off (avoids flashing)
+      if frame - self.fog_frame > 200:
+        self.state = IoCState.stopping
+      else:
+        print('Delaying...', end=' ')
+      print(self.fog)
+
     # # TODO: check that our last command is the one the is being acknowledged (BD.BS.iocFeedback[0])
-    active = LateralDesire != Desire.none
+    active = lateralDesire != Desire.none or (self.do_fogs and self.fog and not self.fog_started)
 
     # ready the state machine to send
     if active and self.state == IoCState.idle:
@@ -81,20 +109,24 @@ class IOCController(IOC):
         self.sendCnt +=1
         # TODO: check elapsed time since sent vs reply
         # TODO: combine this with the user override check
-        if LateralDesire in [Desire.turnLeft, Desire.laneChangeLeft, Desire.keepLeft]:
-          self.append(frame, IOC.MsgType.Start, IOC.Command.SignalLeft, commands)
-        elif LateralDesire in [Desire.turnRight, Desire.laneChangeRight, Desire.keepRight]:
-          self.append(frame, IOC.MsgType.Start, IOC.Command.SignalRight, commands)
+        if self.fog and not self.fog_started:
+            self.append(frame, IOC.MsgType.Start, IOC.Command.FrontFogLamps, commands)
+            self.fog_started = True
         else:
-          pass
+          if lateralDesire in [Desire.turnLeft, Desire.laneChangeLeft, Desire.keepLeft]:
+            self.append(frame, IOC.MsgType.Start, IOC.Command.SignalLeft, commands)
+          elif lateralDesire in [Desire.turnRight, Desire.laneChangeRight, Desire.keepRight]:
+            self.append(frame, IOC.MsgType.Start, IOC.Command.SignalRight, commands)
+          else:
+            pass
 
     if not active and self.state in [IoCState.starting, IoCState.waiting]:
       self.state = IoCState.stopping
 
     # check for user override
     if self.state in [IoCState.starting, IoCState.waiting]:
-      if LateralDesire in [Desire.turnLeft, Desire.laneChangeLeft, Desire.keepLeft] and CS.out.rightBlinker or \
-        LateralDesire in [Desire.turnRight, Desire.laneChangeRight, Desire.keepRight] and CS.out.leftBlinker:
+      if lateralDesire in [Desire.turnLeft, Desire.laneChangeLeft, Desire.keepLeft] and CS.out.rightBlinker or \
+        lateralDesire in [Desire.turnRight, Desire.laneChangeRight, Desire.keepRight] and CS.out.leftBlinker:
         self.state = IoCState.userOverride
       if [Event.driverDistracted, Event.driverUnresponsive] in DM.events:
         self.state = IoCState.driverUnresponsive
