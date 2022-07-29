@@ -31,32 +31,34 @@ def get_body_parser(CP):
   if CP.flags & HondaFlags.BODY_CAN:
     # generic
     signals += [# ajar state
-               ('LF_OPEN', 'LEFT_DOORS'),
-               ('LR_OPEN', 'LEFT_DOORS'),
-               ('RF_OPEN', 'RIGHT_DOORS'),
-               ('RR_OPEN', 'RIGHT_DOORS'),
-               ('TRUNK_OPEN', 'TRUNK_2'),
+               ("LF_OPEN", "LEFT_DOORS"),
+               ("LR_OPEN", "LEFT_DOORS"),
+               ("RF_OPEN", "RIGHT_DOORS"),
+               ("RR_OPEN", "RIGHT_DOORS"),
+               ("TRUNK_OPEN", "TRUNK_2"),
                # locks
-               ('LF_UNLOCKED', 'LF_DOOR'),
-               ('UNLOCKED', 'RF_DOOR'),
-               ('UNLOCKED', 'LR_DOOR'),
-               ('UNLOCKED', 'RR_DOOR'),
+               ("LF_UNLOCKED", "LF_DOOR"),
+               ("UNLOCKED", "RF_DOOR"),
+               ("UNLOCKED", "LR_DOOR"),
+               ("UNLOCKED", "RR_DOOR"),
                # windows
-               ('LF_WINDOWSTATE', 'FRONT_WINDOWS'),
-               ('RF_WINDOWSTATE', 'FRONT_WINDOWS'),
+               ("LF_WINDOWSTATE", "FRONT_WINDOWS"),
+               ("RF_WINDOWSTATE", "FRONT_WINDOWS"),
                # lighting
-               ('LEFTSIGNAL', 'LIGHTING_3'),
-               ('RIGHTSIGNAL', 'LIGHTING_3'),
-               ('HAZARDS_ENABLE', 'LIGHTING_3'),
-               ('REVERSE', 'LIGHTING_3'),
-               ('BRAKES', 'LIGHTING_3'),
-               ('PARKING_LIGHTS', 'LIGHTING_4'),
-               ('HIGH_BEAMS', 'LIGHTING_1'),
-               # ('LOW_BEAMS', 'LIGHTING_1'),
+               ("LEFTSIGNAL", "LIGHTING_3"),
+               ("RIGHTSIGNAL", "LIGHTING_3"),
+               ("HAZARDS_ENABLE", "LIGHTING_3"),
+               ("REVERSE", "LIGHTING_3"),
+               ("BRAKES", "LIGHTING_3"),
+               ("PARKING_LIGHTS", "LIGHTING_4"),
+               ("HIGH_BEAM", "LIGHTING_1"),
+               ("LOW", "LIGHTING_STALK"),
+               ("AUTO", "LIGHTING_STALK"),
+               ("FRONT_FOG", "LIGHTING_STALK"),
                ]
 
     if CP.carFingerprint in BODY_SUNROOF_ON_CAN:
-      signals += [('SUNROOF_CLOSED', 'FRONT_WINDOWS')]
+      signals += [("SUNROOF_CLOSED", "FRONT_WINDOWS")]
 
     checks += [
       # TODO: ADD MORE FREQUENCY.
@@ -69,6 +71,7 @@ def get_body_parser(CP):
       ("RR_DOOR", 0),
       ("FRONT_WINDOWS", 0),
       ("LIGHTING_1", 3), # at least 3.33hz. faster if signals are changing
+      ("LIGHTING_STALK", 3), # at least 3.33hz. faster if signals are changing
       ("LIGHTING_3", 3), # at least 3.33hz. faster if signals are changing
       ("LIGHTING_4", 3), # at least 3.33hz. faster if signals are changing
     ]
@@ -95,18 +98,18 @@ class Body():
     ret = body.BodyState.new_message()
 
     # ajar state
-    ret.frontLeftDoor.state = Door.State.open if bool(cp_body.vl["LEFT_DOORS"]['LF_OPEN']) else Door.State.closed
-    ret.frontRightDoor.state = Door.State.open if bool(cp_body.vl["RIGHT_DOORS"]['RF_OPEN']) else Door.State.closed
-    ret.rearLeftDoor.state = Door.State.open if bool(cp_body.vl["LEFT_DOORS"]['LR_OPEN']) else Door.State.closed
-    ret.rearRightDoor.state = Door.State.open if bool(cp_body.vl["RIGHT_DOORS"]['RR_OPEN']) else Door.State.closed
+    ret.frontLeftDoor.state = Door.State.open if bool(cp_body.vl["LEFT_DOORS"]["LF_OPEN"]) else Door.State.closed
+    ret.frontRightDoor.state = Door.State.open if bool(cp_body.vl["RIGHT_DOORS"]["RF_OPEN"]) else Door.State.closed
+    ret.rearLeftDoor.state = Door.State.open if bool(cp_body.vl["LEFT_DOORS"]["LR_OPEN"]) else Door.State.closed
+    ret.rearRightDoor.state = Door.State.open if bool(cp_body.vl["RIGHT_DOORS"]["RR_OPEN"]) else Door.State.closed
     # ret.hood # TODO: find this
-    ret.trunk.state = Door.State.open if bool(cp_body.vl["TRUNK_2"]['TRUNK_OPEN']) else Door.State.closed
+    ret.trunk.state = Door.State.open if bool(cp_body.vl["TRUNK_2"]["TRUNK_OPEN"]) else Door.State.closed
 
     # locks
-    ret.frontLeftDoor.lock = Door.Lock.unlocked if bool(cp_body.vl["LF_DOOR"]['LF_UNLOCKED']) else Door.Lock.locked
-    ret.frontRightDoor.lock = Door.Lock.unlocked if bool(cp_body.vl["RF_DOOR"]['UNLOCKED']) else Door.Lock.locked
-    ret.rearLeftDoor.lock = Door.Lock.unlocked if bool(cp_body.vl["LR_DOOR"]['UNLOCKED']) else Door.Lock.locked
-    ret.rearRightDoor.lock = Door.Lock.unlocked if bool(cp_body.vl["RR_DOOR"]['UNLOCKED']) else Door.Lock.locked
+    ret.frontLeftDoor.lock = Door.Lock.unlocked if bool(cp_body.vl["LF_DOOR"]["LF_UNLOCKED"]) else Door.Lock.locked
+    ret.frontRightDoor.lock = Door.Lock.unlocked if bool(cp_body.vl["RF_DOOR"]["UNLOCKED"]) else Door.Lock.locked
+    ret.rearLeftDoor.lock = Door.Lock.unlocked if bool(cp_body.vl["LR_DOOR"]["UNLOCKED"]) else Door.Lock.locked
+    ret.rearRightDoor.lock = Door.Lock.unlocked if bool(cp_body.vl["RR_DOOR"]["UNLOCKED"]) else Door.Lock.locked
 
     # windows
     ret.frontLeftWindow = Window.closed if bool(cp_body.vl["FRONT_WINDOWS"]["LF_WINDOWSTATE"]) else Window.open
@@ -134,12 +137,18 @@ class Body():
 
     ret.lighting.hazards = bool(cp_body.vl["LIGHTING_3"]["HAZARDS_ENABLE"])
     ret.lighting.parking = bool(cp_body.vl["LIGHTING_4"]["PARKING_LIGHTS"])
-    # ret.lighting.lowBeams =
-    ret.lighting.highBeams = bool(cp_body.vl["LIGHTING_1"]["HIGH_BEAMS"])
+    ret.lighting.lowBeam = bool(cp_body.vl["LIGHTING_STALK"]["LOW"])
+    ret.lighting.highBeams = bool(cp_body.vl["LIGHTING_1"]["HIGH_BEAM"])
     ret.lighting.reverse = bool(cp_body.vl["LIGHTING_3"]["REVERSE"])
     # TODO: find real brake lights, not the pedal
     # ret.lighting.brake = bool(cp_body.vl["LIGHTING_3"]["BRAKES"])
+
     # ret.lighting.drl = ?
+
+    # stalks
+    ret.lighting.frontFog = bool(cp_body.vl["LIGHTING_STALK"]["FRONT_FOG"]) # at the switch
+    # ret.lighing.rearFog =
+    ret.lighting.auto = bool(cp_body.vl["LIGHTING_STALK"]["AUTO"]) # at the switch
 
     self.iocFeedback = cp_body.vl["IOC_BCM_FDBK"]
 

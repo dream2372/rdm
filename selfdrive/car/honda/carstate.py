@@ -313,6 +313,10 @@ class CarState(CarStateBase):
       ret.rightBlindspot = cp_body.vl["BSM_STATUS_RIGHT"]["BSM_ALERT"] == 1
 
     self.iocFeedback = cp_body.vl["IOC_BCM_FDBK"]
+    self.lighting_auto = bool(cp_body.vl["LIGHTING_STALK"]["AUTO"])
+    self.lighting_low = bool(cp_body.vl["LIGHTING_STALK"]["LOW"])
+    self.lighting_fog = bool(cp_body.vl["LIGHTING_STALK"]["FRONT_FOG"])
+
     return ret
 
   def get_can_parser(self, CP):
