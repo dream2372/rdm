@@ -8,7 +8,7 @@ from common.params import Params
 
 # 10ms is a typical response time
 MAX_SEND_CNT = 4 * 10
-MIN_FOG_ANGLE = 35. # deg
+MIN_FOG_ANGLE = 25. # deg
 FOG_DELAY = 200 # steps
 
 Desire = log.LateralPlan.Desire
@@ -103,23 +103,23 @@ class IOC():
     def update(self, frame, CS):
       cmd = []
 
+      # permanent
       if self.attempts >= MAX_SEND_CNT and self.state not in [IoCState.lockout, IoCState.unsupported]:
         self.state = IoCState.lockout
 
-      # permanent
       if self.state in [IoCState.lockout, IoCState.unsupported]:
         return cmd
 
-      # time is up. cancelling
+      # cancel on timeout
       if self.state == IoCState.waiting and self.delayFrames:
         if frame - self.lastFrame > self.delayFrames:
           self.state = IoCState.stopping
 
+      # stop
       if self.state in [IoCState.stopping, IoCState.userOverride]:
         cmd.append(self.stop())
 
       # state update
-
       active = self.state in [IoCState.starting, IoCState.waiting]
       if active:
         if self.state == IoCState.starting:
@@ -128,9 +128,9 @@ class IOC():
              CS.iocFeedback['D2'] == self.command[2]:
             self.state = IoCState.waiting
       else:
-        if self.state not in [IoCState.idle, IoCState.lockout, IoCState.stopping, IoCState.unsupported]:
+        if self.state not in [IoCState.idle, IoCState.lockout, IoCState.stopping, IoCState.override, IoCState.unsupported]:
           self.state = IoCState.stopping
-        # cancel / handle user override
+        # cancel / handle user override. we can only return to idle from here
         if self.state in [IoCState.stopping, IoCState.userOverride]:
           if CS.iocFeedback['D0'] == IOC.MsgType.Stopped:
             self.state = IoCState.idle
@@ -148,7 +148,6 @@ class IOC():
       self.attempts += 1
       # appending the command doesn't do anything. for debugging via CAN
       return bcm_io_over_can(self.packer, [IOC.MsgType.Stop, self.command])
-
 
 
 class IOCController(IOC):
@@ -182,7 +181,6 @@ class IOCController(IOC):
 
       if self.turn_signal_left.state == IoCState.lockout or self.turn_signal_right.state == IoCState.lockout:
         lockout = True
-
 
     # TODO: control each flash
     # TODO: interior lights + hazards on terminal DM
