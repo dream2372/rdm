@@ -7,8 +7,8 @@ from common.params import Params
 # TODO: Make platform agnostic. Generate all of this file in openioc
 
 # 10ms is a typical response time
-MAX_SEND_CNT = 4 * 10
-MIN_FOG_ANGLE = 25. # deg
+MAX_SEND_CNT = 100
+MIN_FOG_ANGLE = 30. # deg
 FOG_DELAY = 200 # steps
 
 Desire = log.LateralPlan.Desire
@@ -20,17 +20,12 @@ Event = car.CarEvent.EventName
 #       self.state = IoCState.driverUnresponsive
 
 
-def process_turn_signals(signal, CS, lateralDesire):
+def process_turn_signals(frame, signal, CS, lateralDesire):
   cmd = []
   # adaptive signal timing
   # self.turnSignalOnPeriod = 0.0
   # self.turnSignalOffPeriod = 0.0
   # left
-
-  print('desire ', end=' '), print(lateralDesire)
-  print('blinker_l ', end=' '), print(CS.out.leftBlinker)
-  print('blinker_r ', end=' '), print(CS.out.leftBlinker)
-  print('state ', end=' '), print(signal.state)
 
   if lateralDesire in [Desire.turnLeft, Desire.laneChangeLeft, Desire.keepLeft]:
     if CS.out.rightBlinker:
@@ -38,7 +33,7 @@ def process_turn_signals(signal, CS, lateralDesire):
     elif signal.state == IoCState.idle:
       signal.state = IoCState.starting
       print('Left signal...')
-      cmd = signal.start()
+      cmd.append(signal.start())
   # right
   elif lateralDesire in [Desire.turnRight, Desire.laneChangeRight, Desire.keepRight]:
     if CS.out.leftBlinker:
@@ -46,24 +41,29 @@ def process_turn_signals(signal, CS, lateralDesire):
     elif signal.state == IoCState.idle:
       signal.state = IoCState.starting
       print('Right signal...')
-      cmd = signal.start()
+      cmd.append(signal.start())
   # cancel
   else:
     if signal.state in [IoCState.starting, IoCState.waiting]:
       signal.state = IoCState.stopping
-  return cmd
+  return cmd, signal
 
-def process_foglights(fogs, CS, lateralControl):
+def process_foglights(frame, fogs, CS, lateralControl):
   cmd = []
   steer_exceeded = ((abs(lateralControl.steeringAngleDesiredDeg) + abs(lateralControl.steeringAngleDeg)) / 2) >= MIN_FOG_ANGLE
   # this should be gated on ambient light too (from car or device)
   lighting_acceptable = CS.lighting_auto and not CS.lighting_fog and CS.lighting_low
   override = not lighting_acceptable or CS.out.vEgo > (fogs.maxSpeed * CV.MPH_TO_MS)
   fog = steer_exceeded and lighting_acceptable and not override
-  if fog and fogs.state == IoCState.idle:
+  if fog and not override:
+    fogs.lastFrame = frame
+    if fogs.state in [IoCState.idle, IoCState.starting] and frame % 10 == 0:
       print('Fogging...')
-      cmd = fogs.start()
-  return cmd
+      fogs.state = IoCState.starting
+      cmd.append(fogs.start())
+  if fogs.state in [IoCState.starting, IoCState.waiting] and override:
+    fogs.state = IoCState.userOverride
+  return cmd, fogs
 
 class IOC():
   class Command():
@@ -107,36 +107,34 @@ class IOC():
       if self.attempts >= MAX_SEND_CNT and self.state not in [IoCState.lockout, IoCState.unsupported]:
         self.state = IoCState.lockout
 
-      if self.state in [IoCState.lockout, IoCState.unsupported]:
-        return cmd
-
       # cancel on timeout
       if self.state == IoCState.waiting and self.delayFrames:
         if frame - self.lastFrame > self.delayFrames:
+          print('timeout....')
           self.state = IoCState.stopping
-
-      # stop
-      if self.state in [IoCState.stopping, IoCState.userOverride]:
-        cmd.append(self.stop())
 
       # state update
       active = self.state in [IoCState.starting, IoCState.waiting]
       if active:
         if self.state == IoCState.starting:
           if CS.iocFeedback['D0'] == IOC.MsgType.Started and \
-             CS.iocFeedback['D1'] == self.command[1] and \
-             CS.iocFeedback['D2'] == self.command[2]:
+             CS.iocFeedback['D1'] == self.command[1]:
+            self.attempts = 0
             self.state = IoCState.waiting
       else:
-        if self.state not in [IoCState.idle, IoCState.lockout, IoCState.stopping, IoCState.override, IoCState.unsupported]:
+        if self.state not in [IoCState.idle, IoCState.lockout, IoCState.stopping, IoCState.userOverride, IoCState.unsupported]:
           self.state = IoCState.stopping
         # cancel / handle user override. we can only return to idle from here
         if self.state in [IoCState.stopping, IoCState.userOverride]:
           if CS.iocFeedback['D0'] == IOC.MsgType.Stopped:
+            print('stopped successfully...')
+            self.attempts = 0
             self.state = IoCState.idle
           else:
             # This cancels ALL active tests per module
-            cmd.append(self.stop())
+            if frame % 10 == 0:
+              print('stopping...')
+              cmd.append(self.stop())
 
       return cmd
 
@@ -163,21 +161,36 @@ class IOCController(IOC):
     lockout = False
     # dirty
     if self.cornering_fogs is not None:
-      f = process_foglights(self.cornering_fogs, CS, lateralControl)
+      f, self.cornering_fogs = process_foglights(frame, self.cornering_fogs, CS, lateralControl)
+      f2 = self.cornering_fogs.update(frame, CS)
       if len(f) != 0:
-        commands.append(f)
-      self.cornering_fogs.update(frame, CS)
+        for msg in f:
+          commands.append(msg)
+      if len(f2) != 0:
+        for msg in f2:
+          commands.append(msg)
       if self.cornering_fogs.state == IoCState.lockout:
         lockout = True
 
-    if self.turn_signal_left and self.turn_signal_right is not None:
-      tl = process_turn_signals(self.turn_signal_left, CS, lateralDesire)
+    if False:#self.turn_signal_left is not None and self.turn_signal_right is not None:
+      tl, self.turn_signal_left = process_turn_signals(frame, self.turn_signal_left, CS, lateralDesire)
+      tl2 = self.turn_signal_left.update(frame, CS)
       if len(tl) != 0:
-        commands.append(tl)
+        for msg in tl:
+          commands.append(msg)
+      if len(tl2) != 0:
+        for msg in tl2:
+          commands.append(msg)
 
-      tr = process_turn_signals(self.turn_signal_right, CS, lateralDesire)
+
+      tr, self.turn_signal_right = process_turn_signals(frame, self.turn_signal_right, CS, lateralDesire)
+      tr2 = self.turn_signal_right.update(frame, CS)
       if len(tr) != 0:
-        commands.append(tr)
+        for msg in tr:
+          commands.append(msg)
+      if len(tr2) != 0 :
+        for msg in tr2:
+          commands.append(msg)
 
       if self.turn_signal_left.state == IoCState.lockout or self.turn_signal_right.state == IoCState.lockout:
         lockout = True
@@ -187,7 +200,6 @@ class IOCController(IOC):
     # TODO: gateway firmware
 
     # lockout variable is for controlsd
-    print(commands)
     return commands, lockout
 
 # def test():
@@ -195,3 +207,4 @@ class IOCController(IOC):
 #
 # if __name__ == '__main__':
 #   test()
+

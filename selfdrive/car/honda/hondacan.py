@@ -176,7 +176,7 @@ def spam_buttons_command(packer, button_val, idx, car_fingerprint):
 def bcm_io_over_can(packer, command, bus=0):
   values = {
     'D0': command[0],
-    'D1': command[1][0],
-    'D2': command[1][1]
+    'D1': command[1][1],
+    'D2': command[1][2]
   }
   return packer.make_can_msg("IOC_BCM_REQ", bus, values)
