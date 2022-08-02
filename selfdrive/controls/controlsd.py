@@ -100,7 +100,7 @@ class Controls:
     self.is_ldw_enabled = params.get_bool("IsLdwEnabled")
     openpilot_enabled_toggle = params.get_bool("OpenpilotEnabledToggle")
     passive = params.get_bool("Passive") or not openpilot_enabled_toggle
-    self.IocControl = params.get("AF_TurnSignalControl") == b"1" and self.CI.IOC is not None
+    self.IocControl = self.CI.IOC is not None
     if self.IocControl:
       self.iocLockout = False
 
@@ -622,7 +622,7 @@ class Controls:
       self.last_actuators, can_sends = self.CI.apply(CC)
 
       if self.IocControl:
-        ioc_out, self.iocLockout = self.CI.IOC.update(self.sm.frame, self.CI.CS, self.sm['lateralPlan'].desire, self.sm['driverMonitoringState'], latControl=lac_log)
+        ioc_out, self.iocLockout = self.CI.IOC.update(self.sm.frame, self.CI.CS, self.sm['lateralPlan'].desire, self.sm['driverMonitoringState'], lateralControl=lac_log)
         if ioc_out:
           can_sends.extend(ioc_out)
 
