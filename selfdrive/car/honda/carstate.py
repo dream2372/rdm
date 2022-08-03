@@ -5,7 +5,7 @@ from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from selfdrive.config import Conversions as CV
 from selfdrive.car.interfaces import CarStateBase
-from selfdrive.car.honda.values import CAR, DBC, STEER_THRESHOLD, HONDA_BOSCH, HONDA_NIDEC_ALT_SCM_MESSAGES, HONDA_BOSCH_ALT_BRAKE_SIGNAL
+from selfdrive.car.honda.values import CAR, DBC, STEER_THRESHOLD, HONDA_BOSCH, HONDA_NIDEC_ALT_SCM_MESSAGES, HONDA_BOSCH_ALT_BRAKE_SIGNAL, HondaFlags
 from selfdrive.car.honda.body import get_body_parser
 
 TransmissionType = car.CarParams.TransmissionType
@@ -312,10 +312,11 @@ class CarState(CarStateBase):
       ret.leftBlindspot = cp_body.vl["BSM_STATUS_LEFT"]["BSM_ALERT"] == 1
       ret.rightBlindspot = cp_body.vl["BSM_STATUS_RIGHT"]["BSM_ALERT"] == 1
 
-    self.iocFeedback = cp_body.vl["IOC_BCM_FDBK"]
-    self.lighting_auto = bool(cp_body.vl["LIGHTING_STALK"]["AUTO"])
-    self.lighting_low = bool(cp_body.vl["LIGHTING_STALK"]["LOW"])
-    self.lighting_fog = bool(cp_body.vl["LIGHTING_STALK"]["FRONT_FOG"])
+    if self.CP.flags & HondaFlags.BODY_CAN.value:
+      self.iocFeedback = cp_body.vl["IOC_BCM_FDBK"]
+      self.lighting_auto = bool(cp_body.vl["LIGHTING_STALK"]["AUTO"])
+      self.lighting_low = bool(cp_body.vl["LIGHTING_STALK"]["LOW"])
+      self.lighting_fog = bool(cp_body.vl["LIGHTING_STALK"]["FRONT_FOG"])
 
     return ret
 
