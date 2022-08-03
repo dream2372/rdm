@@ -7,7 +7,7 @@ from common.params import Params
 # TODO: Make platform agnostic. Generate all of this file in openioc
 
 # 10ms is a typical response time
-MAX_SEND_CNT = 100
+MAX_SEND_CNT = 10
 MIN_FOG_ANGLE = 30. # deg
 FOG_DELAY = 200 # steps
 
@@ -20,31 +20,30 @@ Event = car.CarEvent.EventName
 #       self.state = IoCState.driverUnresponsive
 
 
-def process_turn_signals(frame, signal, CS, lateralDesire):
+def process_turn_signals(frame, signal, CS, lateralDesire, left=False):
   cmd = []
   # adaptive signal timing
   # self.turnSignalOnPeriod = 0.0
   # self.turnSignalOffPeriod = 0.0
   # left
-
-  if lateralDesire in [Desire.turnLeft, Desire.laneChangeLeft, Desire.keepLeft]:
+  if left and lateralDesire in [Desire.turnLeft, Desire.laneChangeLeft, Desire.keepLeft]:
     if CS.out.rightBlinker:
       signal.state = IoCState.userOverride
-    elif signal.state == IoCState.idle:
+    if signal.state == IoCState.idle:
       signal.state = IoCState.starting
       print('Left signal...')
       cmd.append(signal.start())
   # right
-  elif lateralDesire in [Desire.turnRight, Desire.laneChangeRight, Desire.keepRight]:
+  elif not left and lateralDesire in [Desire.turnRight, Desire.laneChangeRight, Desire.keepRight]:
     if CS.out.leftBlinker:
       signal.state = IoCState.userOverride
-    elif signal.state == IoCState.idle:
+    if signal.state == IoCState.idle:
       signal.state = IoCState.starting
       print('Right signal...')
       cmd.append(signal.start())
   # cancel
   else:
-    if signal.state in [IoCState.starting, IoCState.waiting]:
+    if signal.state in [IoCState.starting, IoCState.waiting, IoCState.userOverride]:
       signal.state = IoCState.stopping
   return cmd, signal
 
@@ -55,14 +54,15 @@ def process_foglights(frame, fogs, CS, lateralControl):
   lighting_acceptable = CS.lighting_auto and not CS.lighting_fog and CS.lighting_low
   override = not lighting_acceptable or CS.out.vEgo > (fogs.maxSpeed * CV.MPH_TO_MS)
   fog = steer_exceeded and lighting_acceptable and not override
-  if fog and not override:
-    fogs.lastFrame = frame
-    if fogs.state in [IoCState.idle, IoCState.starting] and frame % 10 == 0:
-      print('Fogging...')
-      fogs.state = IoCState.starting
-      cmd.append(fogs.start())
-  if fogs.state in [IoCState.starting, IoCState.waiting] and override:
-    fogs.state = IoCState.userOverride
+  if fog:
+    if not override:
+      fogs.lastFrame = frame
+      if fogs.state in [IoCState.idle, IoCState.starting] and frame % 10 == 0:
+        print('Fogging...')
+        fogs.state = IoCState.starting
+        cmd.append(fogs.start())
+    else:
+      fogs.state = IoCState.userOverride
   return cmd, fogs
 
 class IOC():
@@ -113,33 +113,41 @@ class IOC():
           print('timeout....')
           self.state = IoCState.stopping
 
-      # state update
-      active = self.state in [IoCState.starting, IoCState.waiting]
-      if active:
-        if self.state == IoCState.starting:
-          if CS.iocFeedback['D0'] == IOC.MsgType.Started and \
-             CS.iocFeedback['D1'] == self.command[1]:
-            self.attempts = 0
-            self.state = IoCState.waiting
+      if self.state not in [IoCState.starting, IoCState.stopping, IoCState.userOverride]:
+        iocFeedback = {'D0': 0.0, 'D1': 0.0}
       else:
-        if self.state not in [IoCState.idle, IoCState.lockout, IoCState.stopping, IoCState.userOverride, IoCState.unsupported]:
-          self.state = IoCState.stopping
-        # cancel / handle user override. we can only return to idle from here
-        if self.state in [IoCState.stopping, IoCState.userOverride]:
-          if CS.iocFeedback['D0'] == IOC.MsgType.Stopped:
+        iocFeedback = CS.iocFeedback
+
+      # state update
+      if self.state == IoCState.starting:
+        # received the desired reply from the BCM
+        if iocFeedback['D0'] == IOC.MsgType.Started and \
+           iocFeedback['D1'] == self.command[1]:
+          print('start successful...')
+          self.attempts = 0
+          self.state = IoCState.waiting
+      # cancel / handle user override. we can only return to idle from here
+      # received the desired reply from the BCM
+      if self.state in [IoCState.stopping, IoCState.userOverride]:
+        if iocFeedback['D0'] == IOC.MsgType.Stopped:
+          if self.state == IoCState.userOverride and self.attempts == 0:
+            print('override....')
+          else:
             print('stopped successfully...')
             self.attempts = 0
-            self.state = IoCState.idle
-          else:
-            # This cancels ALL active tests per module
-            if frame % 10 == 0:
-              print('stopping...')
-              cmd.append(self.stop())
+            if self.state == IoCState.stopping:
+              self.state = IoCState.idle
+        else:
+          # This cancels ALL active tests per module
+          if frame % 10 == 0:
+            print('stopping...')
+            cmd.append(self.stop())
 
       return cmd
 
     def start(self):
       self.attempts += 1
+      print('sending...')
       return bcm_io_over_can(self.packer, [IOC.MsgType.Start, self.command])
 
     def stop(self):
@@ -155,7 +163,6 @@ class IOCController(IOC):
                             if Params().get_bool('AF_CorneringFogLights') else None
     self.turn_signal_left = IOC.Function(IOC.Command.SignalLeft, packer) if Params().get_bool('AF_TurnSignalControl') else None
     self.turn_signal_right = IOC.Function(IOC.Command.SignalRight, packer)  if Params().get_bool('AF_TurnSignalControl') else None
-
   def update(self, frame, CS, lateralDesire, DM, lateralControl):
     commands = []
     lockout = False
@@ -172,8 +179,8 @@ class IOCController(IOC):
       if self.cornering_fogs.state == IoCState.lockout:
         lockout = True
 
-    if False:#self.turn_signal_left is not None and self.turn_signal_right is not None:
-      tl, self.turn_signal_left = process_turn_signals(frame, self.turn_signal_left, CS, lateralDesire)
+    if self.turn_signal_left is not None and self.turn_signal_right is not None:
+      tl, self.turn_signal_left = process_turn_signals(frame, self.turn_signal_left, CS, lateralDesire, left=True)
       tl2 = self.turn_signal_left.update(frame, CS)
       if len(tl) != 0:
         for msg in tl:
@@ -207,4 +214,3 @@ class IOCController(IOC):
 #
 # if __name__ == '__main__':
 #   test()
-
