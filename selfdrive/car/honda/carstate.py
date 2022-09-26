@@ -83,17 +83,19 @@ def get_can_signals(CP, gearbox_msg, main_on_sig_msg):
 
   if CP.carFingerprint in HONDA_BOSCH:
     # these messages are on camera bus on radarless cars
-    if not CP.openpilotLongitudinalControl and CP.carFingerprint not in HONDA_BOSCH_RADARLESS:
-      signals += [
-        ("CRUISE_CONTROL_LABEL", "ACC_HUD"),
-        ("CRUISE_SPEED", "ACC_HUD"),
-        ("ACCEL_COMMAND", "ACC_CONTROL"),
-        ("AEB_STATUS", "ACC_CONTROL"),
-      ]
-      checks += [
-        ("ACC_HUD", 10),
-        ("ACC_CONTROL", 50),
-      ]
+    if not CP.openpilotLongitudinalControl:
+      signals.append(("COUNTER", "SCM_BUTTONS"))
+      if CP.carFingerprint not in HONDA_BOSCH_RADARLESS:
+        signals += [
+          ("CRUISE_CONTROL_LABEL", "ACC_HUD"),
+          ("CRUISE_SPEED", "ACC_HUD"),
+          ("ACCEL_COMMAND", "ACC_CONTROL"),
+          ("AEB_STATUS", "ACC_CONTROL"),
+        ]
+        checks += [
+          ("ACC_HUD", 10),
+          ("ACC_CONTROL", 50),
+        ]
   else:  # Nidec signals
     signals += [("CRUISE_SPEED_PCM", "CRUISE"),
                 ("CRUISE_SPEED_OFFSET", "CRUISE_PARAMS")]
@@ -151,6 +153,9 @@ class CarState(CarStateBase):
     self.cruise_setting = 0
     self.v_cruise_pcm_prev = 0
 
+    self.button_idx = 0
+    self.button_idx_prev = 0
+
     # When available we use cp.vl["CAR_SPEED"]["ROUGH_CAR_SPEED_2"] to populate vEgoCluster
     # However, on cars without a digital speedometer this is not always present (HRV, FIT, CRV 2016, ILX and RDX)
     self.dash_speed_seen = False
@@ -167,6 +172,9 @@ class CarState(CarStateBase):
     self.prev_cruise_setting = self.cruise_setting
     self.cruise_setting = cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"]
     self.cruise_buttons = cp.vl["SCM_BUTTONS"]["CRUISE_BUTTONS"]
+
+    self.button_idx_prev = self.button_idx
+    self.button_idx = cp.vl["SCM_BUTTONS"]["COUNTER"]
 
     # used for car hud message
     self.is_metric = not cp.vl["CAR_SPEED"]["IMPERIAL_UNIT"]
