@@ -166,10 +166,11 @@ def create_ui_commands(packer, CP, enabled, pcm_speed, hud, is_metric, acc_hud, 
   return commands
 
 
-def spam_buttons_command(packer, button_val, car_fingerprint):
+def spam_buttons_command(packer, button_val, car_fingerprint, idx):
   values = {
     'CRUISE_BUTTONS': button_val,
     'CRUISE_SETTING': 0,
+    'COUNTER': idx,
   }
   # send buttons to camera on radarless cars
   bus = 2 if car_fingerprint in HONDA_BOSCH_RADARLESS else get_pt_bus(car_fingerprint)
