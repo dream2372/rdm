@@ -3,7 +3,8 @@
   url = ../../commaai/panda.git
 [submodule "opendbc"]
   path = opendbc
-  url = ../../commaai/opendbc.git
+  branch = bosch_lkas
+  url = ../../csouers/opendbc.git
 [submodule "laika_repo"]
   path = laika_repo
   url = ../../commaai/laika.git
