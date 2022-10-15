@@ -299,7 +299,7 @@ class CarState(CarStateBase):
       ret.stockFcw = cp_cam.vl["BRAKE_COMMAND"]["FCW"] != 0
       self.acc_hud = cp_cam.vl["ACC_HUD"]
       self.stock_brake = cp_cam.vl["BRAKE_COMMAND"]
-    if self.CP.carFingerprint in HONDA_BOSCH_RADARLESS:
+    if self.CP.carFingerprint in HONDA_BOSCH and not self.CP.openpilotLongitudinalControl:
       self.lkas_hud = cp_cam.vl["LKAS_HUD"]
 
     if self.CP.enableBsm and self.CP.carFingerprint in (CAR.CRV_5G, ):
@@ -322,7 +322,8 @@ class CarState(CarStateBase):
     ]
 
     if CP.carFingerprint in HONDA_BOSCH_RADARLESS:
-      signals.append(("LKAS_PROBLEM", "LKAS_HUD"))
+      signals += [("LKAS_PROBLEM", "LKAS_HUD"),
+                  ("ENABLED", "LKAS_HUD"),]
       checks.append(("LKAS_HUD", 10))
       if not CP.openpilotLongitudinalControl:
         signals += [

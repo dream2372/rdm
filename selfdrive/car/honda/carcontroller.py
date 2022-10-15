@@ -192,20 +192,21 @@ class CarController:
     if not self.CP.openpilotLongitudinalControl:
       if self.frame % 2 == 0 and self.CP.carFingerprint not in HONDA_BOSCH_RADARLESS:  # radarless cars don't have supplemental message
         can_sends.append(hondacan.create_bosch_supplemental_1(self.packer, self.CP.carFingerprint))
-      # If using stock ACC, spam cancel command to kill gas when OP disengages.
-      if pcm_cancel_cmd or CC.cruiseControl.resume:
+      # Do buttons. If using stock ACC, spam cancel command to kill gas when OP disengages.
+      if pcm_cancel_cmd or CC.cruiseControl.resume or CS.lkas_hud['ENABLED']:
         # send one count ahead of the car's last seen packet or our own if we haven't seen the car's yet
         if CS.button_idx != CS.button_idx_prev:
-          # car idx seen
           self.button_idx = (CS.button_idx + 1) % 4
         else:
-          # car idx not seen. iterate over the last sent one
           self.button_idx = (self.button_idx + 1) % 4
 
+        # can we combine the button into the other spamming?
         if pcm_cancel_cmd:
-          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, self.CP.carFingerprint, self.button_idx))
+          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, CS.lkas_hud['ENABLED'], self.CP.carFingerprint, self.button_idx))
+        elif CC.cruiseControl.resume:
+          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, CS.lkas_hud['ENABLED'], self.CP.carFingerprint, self.button_idx))
         else:
-          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, self.CP.carFingerprint, self.button_idx))
+          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.NONE, CS.lkas_hud['ENABLED'], self.CP.carFingerprint, self.button_idx))
 
     else:
       # Send gas and brake commands.
