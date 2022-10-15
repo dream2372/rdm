@@ -6,7 +6,7 @@ from common.numpy_fast import interp
 from opendbc.can.can_define import CANDefine
 from opendbc.can.parser import CANParser
 from selfdrive.car.honda.hondacan import get_pt_bus
-from selfdrive.car.honda.values import CAR, DBC, STEER_THRESHOLD, HONDA_BOSCH, HONDA_NIDEC_ALT_SCM_MESSAGES, HONDA_BOSCH_ALT_BRAKE_SIGNAL, HONDA_BOSCH_RADARLESS
+from selfdrive.car.honda.values import CAR, DBC, STEER_THRESHOLD, HONDA_BOSCH, HONDA_NIDEC_ALT_SCM_MESSAGES, HONDA_BOSCH_ALT_BRAKE_SIGNAL, HONDA_BOSCH_RADARLESS, HondaFlags
 from selfdrive.car.interfaces import CarStateBase
 
 TransmissionType = car.CarParams.TransmissionType
@@ -295,12 +295,18 @@ class CarState(CarStateBase):
 
     self.acc_hud = False
     self.lkas_hud = False
+
+    if self.CP.flags & HondaFlags.BOSCH_EXT_HUD.value:
+      lkas_hud_msg = "LKAS_HUD_A"
+    else:
+      lkas_hud_msg = "LKAS_HUD"
+
     if self.CP.carFingerprint not in HONDA_BOSCH:
       ret.stockFcw = cp_cam.vl["BRAKE_COMMAND"]["FCW"] != 0
       self.acc_hud = cp_cam.vl["ACC_HUD"]
       self.stock_brake = cp_cam.vl["BRAKE_COMMAND"]
     if self.CP.carFingerprint in HONDA_BOSCH and not self.CP.openpilotLongitudinalControl:
-      self.lkas_hud = cp_cam.vl["LKAS_HUD"]
+      self.lkas_hud = cp_cam.vl[lkas_hud_msg]
 
     if self.CP.enableBsm and self.CP.carFingerprint in (CAR.CRV_5G, ):
       # BSM messages are on B-CAN, requires a panda forwarding B-CAN messages to CAN 0
@@ -320,17 +326,27 @@ class CarState(CarStateBase):
     checks = [
       ("STEERING_CONTROL", 100),
     ]
+    if CP.flags & HondaFlags.BOSCH_EXT_HUD.value:
+      lkas_hud_msg = "LKAS_HUD_A"
+    else:
+      lkas_hud_msg = "LKAS_HUD"
 
     if CP.carFingerprint in HONDA_BOSCH_RADARLESS:
-      signals += [("LKAS_PROBLEM", "LKAS_HUD"),
-                  ("ENABLED", "LKAS_HUD"),]
-      checks.append(("LKAS_HUD", 10))
+      signals += [
+        ("LKAS_PROBLEM", lkas_hud_msg),
+        ("ENABLED", lkas_hud_msg),
+      ]
+      checks.append((lkas_hud_msg, 10))
       if not CP.openpilotLongitudinalControl:
         signals += [
           ("CRUISE_SPEED", "ACC_HUD"),
           ("CRUISE_CONTROL_LABEL", "ACC_HUD"),
         ]
         checks.append(("ACC_HUD", 10))
+
+    elif CP.carFingerprint in HONDA_BOSCH and not CP.openpilotLongitudinalControl:
+      signals.append(("ENABLED", lkas_hud_msg))
+      checks.append((lkas_hud_msg, 10))
 
     elif CP.carFingerprint not in HONDA_BOSCH:
       signals += [("COMPUTER_BRAKE", "BRAKE_COMMAND"),
