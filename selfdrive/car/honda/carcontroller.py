@@ -7,7 +7,7 @@ from common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
 from selfdrive.car import create_gas_interceptor_command
 from selfdrive.car.honda import hondacan
-from selfdrive.car.honda.values import CruiseButtons, VISUAL_HUD, HONDA_BOSCH, HONDA_BOSCH_RADARLESS, HONDA_NIDEC_ALT_PCM_ACCEL, CarControllerParams
+from selfdrive.car.honda.values import CruiseButtons, CruiseSettings, VISUAL_HUD, HONDA_BOSCH, HONDA_BOSCH_RADARLESS, HONDA_NIDEC_ALT_PCM_ACCEL, CarControllerParams
 from selfdrive.controls.lib.drive_helpers import rate_limit
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -123,7 +123,6 @@ class CarController:
     actuators = CC.actuators
     hud_control = CC.hudControl
     hud_v_cruise = hud_control.setSpeed * CV.MS_TO_KPH if hud_control.speedVisible else 255
-    pcm_cancel_cmd = CC.cruiseControl.cancel
 
     if CC.longActive:
       accel = actuators.accel
@@ -189,30 +188,27 @@ class CarController:
       pcm_speed = interp(gas - brake, pcm_speed_BP, pcm_speed_V)
       pcm_accel = int(clip((accel / 1.44) / max_accel, 0.0, 1.0) * 0xc6)
 
-    if not self.CP.openpilotLongitudinalControl:
-      if self.frame % 2 == 0 and self.CP.carFingerprint not in HONDA_BOSCH_RADARLESS:  # radarless cars don't have supplemental message
-        can_sends.append(hondacan.create_bosch_supplemental_1(self.packer, self.CP.carFingerprint))
-      # Do buttons. If using stock ACC, spam cancel command to kill gas when OP disengages.
-      if pcm_cancel_cmd or CC.cruiseControl.resume or CS.lkas_hud['ENABLED']:
-        # send one count ahead of the car's last seen packet or our own if we haven't seen the car's yet
-        if CS.button_idx != CS.button_idx_prev:
-          self.button_idx = (CS.button_idx + 1) % 4
-        else:
-          self.button_idx = (self.button_idx + 1) % 4
+    # If using stock ACC, spam cancel command to kill gas when OP disengages
+    if not self.CP.openpilotLongitudinalControl and (CC.cruiseControl.cancel or CC.cruiseControl.resume or CS.lkas_hud['ENABLED']) or \
+      self.CP.carFingerprint in HONDA_BOSCH_RADARLESS and CS.lkas_hud['ENABLED']:
 
-        # can we combine the button into the other spamming?
-        if pcm_cancel_cmd:
-          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, CS.lkas_hud['ENABLED'], self.CP.carFingerprint, self.button_idx))
-        elif CC.cruiseControl.resume:
-          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, CS.lkas_hud['ENABLED'], self.CP.carFingerprint, self.button_idx))
-        else:
-          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.NONE, CS.lkas_hud['ENABLED'], self.CP.carFingerprint, self.button_idx))
+      # send one counter ahead of the car's last packet or our own if we haven't seen the car's yet
+      self.button_idx = (CS.button_idx + 1) % 4 if CS.button_idx != CS.button_idx_prev else (self.button_idx + 1) % 4
+      cruise_setting = CruiseSettings.LKAS if CS.lkas_hud['ENABLED'] else CruiseSettings.NONE
 
-    else:
-      # Send gas and brake commands.
-      if self.frame % 2 == 0:
-        ts = self.frame * DT_CTRL
+      if CC.cruiseControl.cancel:
+        can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, cruise_setting, self.CP.carFingerprint, self.button_idx))
+      elif CC.cruiseControl.resume:
+        can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, cruise_setting, self.CP.carFingerprint, self.button_idx))
+      else:
+        can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.NONE, cruise_setting, self.CP.carFingerprint, self.button_idx))
 
+    # Send gas and brake commands.
+    if self.frame % 2 == 0:
+      if not self.CP.openpilotLongitudinalControl:
+        if self.CP.carFingerprint not in HONDA_BOSCH_RADARLESS:
+          can_sends.append(hondacan.create_bosch_supplemental_1(self.packer, self.CP.carFingerprint))
+      else:
         if self.CP.carFingerprint in HONDA_BOSCH:
           self.accel = clip(accel, self.params.BOSCH_ACCEL_MIN, self.params.BOSCH_ACCEL_MAX)
           self.gas = interp(accel, self.params.BOSCH_GAS_LOOKUP_BP, self.params.BOSCH_GAS_LOOKUP_V)
@@ -221,13 +217,15 @@ class CarController:
           can_sends.extend(hondacan.create_acc_commands(self.packer, CC.enabled, CC.longActive, self.accel, self.gas,
                                                         stopping, self.CP.carFingerprint))
         else:
+          ts = self.frame * DT_CTRL
+
           apply_brake = clip(self.brake_last - wind_brake, 0.0, 1.0)
           apply_brake = int(clip(apply_brake * self.params.NIDEC_BRAKE_MAX, 0, self.params.NIDEC_BRAKE_MAX - 1))
           pump_on, self.last_pump_ts = brake_pump_hysteresis(apply_brake, self.apply_brake_last, self.last_pump_ts, ts)
 
           pcm_override = True
           can_sends.append(hondacan.create_brake_command(self.packer, apply_brake, pump_on,
-                                                         pcm_override, pcm_cancel_cmd, fcw_display,
+                                                         pcm_override, CC.cruiseControl.cancel, fcw_display,
                                                          self.CP.carFingerprint, CS.stock_brake))
           self.apply_brake_last = apply_brake
           self.brake = apply_brake / self.params.NIDEC_BRAKE_MAX

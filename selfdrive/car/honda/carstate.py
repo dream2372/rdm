@@ -326,6 +326,7 @@ class CarState(CarStateBase):
     checks = [
       ("STEERING_CONTROL", 100),
     ]
+
     if CP.flags & HondaFlags.BOSCH_EXT_HUD.value:
       lkas_hud_msg = "LKAS_HUD_A"
     else:
@@ -343,11 +344,9 @@ class CarState(CarStateBase):
           ("CRUISE_CONTROL_LABEL", "ACC_HUD"),
         ]
         checks.append(("ACC_HUD", 10))
-
     elif CP.carFingerprint in HONDA_BOSCH and not CP.openpilotLongitudinalControl:
       signals.append(("ENABLED", lkas_hud_msg))
       checks.append((lkas_hud_msg, 10))
-
     elif CP.carFingerprint not in HONDA_BOSCH:
       signals += [("COMPUTER_BRAKE", "BRAKE_COMMAND"),
                   ("AEB_REQ_1", "BRAKE_COMMAND"),
