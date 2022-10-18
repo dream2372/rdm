@@ -193,7 +193,7 @@ class CarController:
       if self.frame % 2 == 0 and self.CP.carFingerprint not in HONDA_BOSCH_RADARLESS:  # radarless cars don't have supplemental message
         can_sends.append(hondacan.create_bosch_supplemental_1(self.packer, self.CP.carFingerprint))
       # Do buttons. If using stock ACC, spam cancel command to kill gas when OP disengages.
-      if pcm_cancel_cmd or CC.cruiseControl.resume or CS.lkas_hud['ENABLED']:
+      if self.frame % 10 == 0 and (pcm_cancel_cmd or CC.cruiseControl.resume or CS.lkas_hud['ENABLED']):
         # send one count ahead of the car's last seen packet or our own if we haven't seen the car's yet
         if CS.button_idx != CS.button_idx_prev:
           self.button_idx = (CS.button_idx + 1) % 4
