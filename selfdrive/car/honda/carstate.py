@@ -84,7 +84,10 @@ def get_can_signals(CP, gearbox_msg, main_on_sig_msg):
   if CP.carFingerprint in HONDA_BOSCH:
     # these messages are on camera bus on radarless cars
     if not CP.openpilotLongitudinalControl:
-      signals.append(("COUNTER", "SCM_BUTTONS"))
+      signals += [
+        ("COUNTER", "SCM_BUTTONS"),
+        ("BYTE2", "SCM_BUTTONS"),
+      ]
       if CP.carFingerprint not in HONDA_BOSCH_RADARLESS:
         signals += [
           ("CRUISE_CONTROL_LABEL", "ACC_HUD"),
@@ -153,8 +156,9 @@ class CarState(CarStateBase):
     self.cruise_setting = 0
     self.v_cruise_pcm_prev = 0
 
-    self.button_idx = 0
-    self.button_idx_prev = 0
+    self.scm_buttons_idx = 0
+    self.scm_buttons_idx_prev = 0
+    self.scm_buttons_byte2 = 0
 
     # When available we use cp.vl["CAR_SPEED"]["ROUGH_CAR_SPEED_2"] to populate vEgoCluster
     # However, on cars without a digital speedometer this is not always present (HRV, FIT, CRV 2016, ILX and RDX)
@@ -173,8 +177,9 @@ class CarState(CarStateBase):
     self.cruise_setting = cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"]
     self.cruise_buttons = cp.vl["SCM_BUTTONS"]["CRUISE_BUTTONS"]
 
-    self.button_idx_prev = self.button_idx
-    self.button_idx = cp.vl["SCM_BUTTONS"]["COUNTER"]
+    self.scm_buttons_idx_prev = self.scm_buttons_idx
+    self.scm_buttons_idx = cp.vl["SCM_BUTTONS"]["COUNTER"]
+    self.scm_buttons_byte2 = cp.vl["SCM_BUTTONS"]["BYTE2"]
 
     # used for car hud message
     self.is_metric = not cp.vl["CAR_SPEED"]["IMPERIAL_UNIT"]

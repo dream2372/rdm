@@ -107,6 +107,7 @@ class CarController:
     self.frame = 0
 
     self.button_idx = 0
+    self.button_frame_prev = 0
 
     self.braking = False
     self.brake_steady = 0.
@@ -118,6 +119,10 @@ class CarController:
     self.speed = 0.0
     self.gas = 0.0
     self.brake = 0.0
+
+    self.fail = 0
+    self.button_idx_old = 0
+    self.scm_delay_frame = 0
 
   def update(self, CC, CS):
     actuators = CC.actuators
@@ -190,23 +195,38 @@ class CarController:
       pcm_accel = int(clip((accel / 1.44) / max_accel, 0.0, 1.0) * 0xc6)
 
     if not self.CP.openpilotLongitudinalControl:
+      # send one count ahead of the car's last seen packet (if updated) else our own
+      if CS.scm_buttons_idx != CS.scm_buttons_idx_prev:
+        self.button_frame_prev = self.frame
+        # if ((self.button_idx + 1) % 4) != CS.scm_buttons_idx:
+        #   self.fail += 1
+        #   print('-------------------------------------fail-----------------------------')
+        self.button_idx = (CS.scm_buttons_idx + 1) % 4
+        self.button_idx_old = 0
+        # print('car sent             ==', end=' '), print(CS.scm_buttons_idx, end=' '), print(self.frame)
+        # print('incrementing car + 1 ==', end=' '), print(self.button_idx, end=' '), print(self.frame)
+      elif self.button_idx_old < 3:
+        self.button_idx_old += 1
+        self.button_idx = (self.button_idx + 1) % 4
+        # print('incrementing old + 1 ==', end=' '), print(self.button_idx, end=' '), print(self.frame)
+      else:
+        # print('system lag. waiting for 2 scm updates')
+        # print('car sent             ==', end=' '), print(CS.scm_buttons_idx, end=' '), print(self.frame)
+        self.scm_delay_frame = self.frame + 10
+        self.fail += 1
+      # if self.fail > 2:
+      #   exit()
       if self.frame % 2 == 0 and self.CP.carFingerprint not in HONDA_BOSCH_RADARLESS:  # radarless cars don't have supplemental message
         can_sends.append(hondacan.create_bosch_supplemental_1(self.packer, self.CP.carFingerprint))
       # Do buttons. If using stock ACC, spam cancel command to kill gas when OP disengages.
-      if self.frame % 10 == 0 and (pcm_cancel_cmd or CC.cruiseControl.resume or CS.lkas_hud['ENABLED']):
-        # send one count ahead of the car's last seen packet or our own if we haven't seen the car's yet
-        if CS.button_idx != CS.button_idx_prev:
-          self.button_idx = (CS.button_idx + 1) % 4
-        else:
-          self.button_idx = (self.button_idx + 1) % 4
-
+      if self.frame >= self.scm_delay_frame and (pcm_cancel_cmd or CC.cruiseControl.resume or CS.lkas_hud['ENABLED']):
         # can we combine the button into the other spamming?
         if pcm_cancel_cmd:
-          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, CS.lkas_hud['ENABLED'], self.CP.carFingerprint, self.button_idx))
+          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, CS.lkas_hud['ENABLED'], self.CP.carFingerprint, self.button_idx, CS.scm_buttons_byte2))
         elif CC.cruiseControl.resume:
-          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, CS.lkas_hud['ENABLED'], self.CP.carFingerprint, self.button_idx))
+          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, CS.lkas_hud['ENABLED'], self.CP.carFingerprint, self.button_idx, CS.scm_buttons_byte2))
         else:
-          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.NONE, CS.lkas_hud['ENABLED'], self.CP.carFingerprint, self.button_idx))
+          can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.NONE, CS.lkas_hud['ENABLED'], self.CP.carFingerprint, self.button_idx, CS.scm_buttons_byte2))
 
     else:
       # Send gas and brake commands.
