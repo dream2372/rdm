@@ -177,9 +177,10 @@ class CarState(CarStateBase):
     self.cruise_setting = cp.vl["SCM_BUTTONS"]["CRUISE_SETTING"]
     self.cruise_buttons = cp.vl["SCM_BUTTONS"]["CRUISE_BUTTONS"]
 
-    self.scm_buttons_idx_prev = self.scm_buttons_idx
-    self.scm_buttons_idx = cp.vl["SCM_BUTTONS"]["COUNTER"]
-    self.scm_buttons_byte2 = cp.vl["SCM_BUTTONS"]["BYTE2"]
+    if self.CP.carFingerprint in HONDA_BOSCH and not self.CP.openpilotLongitudinalControl:
+      self.scm_buttons_idx_prev = self.scm_buttons_idx
+      self.scm_buttons_idx = cp.vl["SCM_BUTTONS"]["COUNTER"]
+      self.scm_buttons_byte2 = cp.vl["SCM_BUTTONS"]["BYTE2"]
 
     # used for car hud message
     self.is_metric = not cp.vl["CAR_SPEED"]["IMPERIAL_UNIT"]
