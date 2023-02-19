@@ -70,7 +70,7 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.pid.kf = 0.00006  # conservative feed-forward
 
     if candidate in HONDA_BOSCH:
-      ret.longitudinalTuning.kpV = [0.25]
+      ret.longitudinalTuning.kpV = [1.11]#[0.25]
       ret.longitudinalTuning.kiV = [0.05]
       ret.longitudinalActuatorDelayUpperBound = 0.5 # s
       if candidate in HONDA_BOSCH_RADARLESS:
@@ -82,7 +82,7 @@ class CarInterface(CarInterfaceBase):
       ret.longitudinalTuning.kiBP = [0., 35.]
       ret.longitudinalTuning.kiV = [0.18, 0.12]
 
-    eps_modified = False
+    eps_modified = True
     for fw in car_fw:
       if fw.ecu == "eps" and b"," in fw.fwVersion:
         eps_modified = True
@@ -111,9 +111,13 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = CivicParams.WHEELBASE
       ret.centerToFront = CivicParams.CENTER_TO_FRONT
       ret.steerRatio = 15.38  # 10.93 is end-to-end spec
-      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
       tire_stiffness_factor = 1.
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
+      if eps_modified:
+        ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2564, 8000], [0, 2564, 3840]]
+        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.4], [0.12]]
+      else:
+        ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
+        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORDH):
       ret.mass = 3279. * CV.LB_TO_KG + STD_CARGO_KG

@@ -2,7 +2,7 @@ import numpy as np
 from numbers import Number
 
 from common.numpy_fast import clip, interp
-
+from common.params import Params
 
 class PIDController():
   def __init__(self, k_p, k_i, k_f=0., k_d=0., pos_limit=1e308, neg_limit=-1e308, rate=100):
@@ -19,6 +19,12 @@ class PIDController():
 
     self.pos_limit = pos_limit
     self.neg_limit = neg_limit
+
+    __p = str(self._k_p[1])
+    if __p == "[1.11]":
+      self.long = True
+    else:
+      self.long = False
 
     self.i_unwind_rate = 0.3 / rate
     self.i_rate = 1.0 / rate
@@ -51,6 +57,10 @@ class PIDController():
 
   def update(self, error, error_rate=0.0, speed=0.0, override=False, feedforward=0., freeze_integrator=False):
     self.speed = speed
+    if self.long:
+      self._k_p = [[0], [float(Params().get("TUNE_P"))]]
+      self._k_i = [[0], [float(Params().get("TUNE_I"))]]
+      self.kf = Params().get("TUNE_F")
 
     self.p = float(error) * self.k_p
     self.f = feedforward * self.k_f

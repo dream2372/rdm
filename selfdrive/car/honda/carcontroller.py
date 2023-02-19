@@ -103,6 +103,18 @@ def rate_limit_steer(new_steer, last_steer):
   MAX_DELTA = 3 * DT_CTRL
   return clip(new_steer, last_steer - MAX_DELTA, last_steer + MAX_DELTA)
 
+def jerk_limit_bosch_accel(new_accel, last_accel):
+  # jerk limit of 1.0 m/s2 of accel in 0.25s
+  MAX_DELTA = 4 * DT_CTRL
+  return clip(new_accel, last_accel - MAX_DELTA, last_accel + MAX_DELTA)
+
+def low_speed_brake_assist(accel, speed, fingerprint):
+  # engine idle control raises rpm near this speed and the brake controller doesn't account for it.
+  # stop crashing into stopped cars at a crawl
+  if fingerprint in HONDA_BOSCH and accel <= -0.4 and speed < 1.6:
+    return accel - 0.25 # stock diff can be up to around 0.35
+  else:
+    return accel
 
 class CarController:
   def __init__(self, dbc_name, CP, VM):
@@ -123,6 +135,7 @@ class CarController:
     self.gas = 0.0
     self.brake = 0.0
     self.last_steer = 0.0
+    self.last_accel = 0.0
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
@@ -132,7 +145,7 @@ class CarController:
     pcm_cancel_cmd = CC.cruiseControl.cancel
 
     if CC.longActive:
-      accel = actuators.accel
+      accel = low_speed_brake_assist(actuators.accel, CS.out.vEgo, self.CP.carFingerprint)
       gas, brake = compute_gas_brake(actuators.accel, CS.out.vEgo, self.CP.carFingerprint)
     else:
       accel = 0.0
@@ -141,6 +154,10 @@ class CarController:
     # *** rate limit steer ***
     limited_steer = rate_limit_steer(actuators.steer, self.last_steer)
     self.last_steer = limited_steer
+
+    # jerk limit accel for Bosch
+    limited_accel = jerk_limit_bosch_accel(actuators.accel, self.last_accel)
+    self.last_accel = limited_accel
 
     # *** apply brake hysteresis ***
     pre_limit_brake, self.braking, self.brake_steady = actuator_hysteresis(brake, self.braking, self.brake_steady,
@@ -214,7 +231,7 @@ class CarController:
         ts = self.frame * DT_CTRL
 
         if self.CP.carFingerprint in HONDA_BOSCH:
-          self.accel = clip(accel, self.params.BOSCH_ACCEL_MIN, self.params.BOSCH_ACCEL_MAX)
+          self.accel = clip(limited_accel, self.params.BOSCH_ACCEL_MIN, self.params.BOSCH_ACCEL_MAX)
           self.gas = interp(accel, self.params.BOSCH_GAS_LOOKUP_BP, self.params.BOSCH_GAS_LOOKUP_V)
 
           stopping = actuators.longControlState == LongCtrlState.stopping
@@ -260,7 +277,7 @@ class CarController:
 
     new_actuators = actuators.copy()
     new_actuators.speed = self.speed
-    new_actuators.accel = self.accel
+    new_actuators.accel = self.accel if self.CP.carFingerprint not in HONDA_BOSCH else self.last_accel
     new_actuators.gas = self.gas
     new_actuators.brake = self.brake
     new_actuators.steer = self.last_steer
