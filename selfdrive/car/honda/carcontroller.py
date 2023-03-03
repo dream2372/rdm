@@ -104,9 +104,9 @@ def rate_limit_steer(new_steer, last_steer):
   return clip(new_steer, last_steer - MAX_DELTA, last_steer + MAX_DELTA)
 
 def jerk_limit_bosch_accel(new_accel, last_accel):
-  # jerk limit of 1.0 m/s2 of accel in 0.25s
-  MAX_DELTA = 4 * DT_CTRL
-  return clip(new_accel, last_accel - MAX_DELTA, last_accel + MAX_DELTA)
+  # Max stock jerk seen when braking seen is 0.08 (in a near AEB scenario); positive accel's is 0.04
+  MAX_JERK = 8 * DT_CTRL if new_accel < 0. else 4 * DT_CTRL
+  return clip(new_accel, last_accel - MAX_JERK, last_accel + MAX_JERK)
 
 def low_speed_brake_assist(accel, speed, fingerprint):
   # engine idle control raises rpm near this speed and the brake controller doesn't account for it.
