@@ -687,13 +687,13 @@ void AnnotatedCameraWidget::paintGL() {
 
     drawLaneLines(painter, s);
 
-    if (s->scene.longitudinal_control) {
+    if (true) {
       auto lead_one = radar_state.getLeadOne();
       auto lead_two = radar_state.getLeadTwo();
       if (lead_one.getStatus()) {
         drawLead(painter, lead_one, s->scene.lead_vertices[0]);
       }
-      if (lead_two.getStatus() && (std::abs(lead_one.getDRel() - lead_two.getDRel()) > 3.0)) {
+      if (lead_two.getStatus()) {
         drawLead(painter, lead_two, s->scene.lead_vertices[1]);
       }
     }
