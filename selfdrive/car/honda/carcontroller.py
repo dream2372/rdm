@@ -109,7 +109,7 @@ def jerk_limit_bosch_accel(new_accel, last_accel):
   return clip(new_accel, last_accel - MAX_JERK, last_accel + MAX_JERK)
 
 def low_speed_brake_assist(accel, speed, fingerprint):
-  # engine idle control raises rpm near this speed and the brake controller doesn't account for it.
+  # engine idle control increases torque near this speed and the brake controller doesn't account for it.
   # stop crashing into stopped cars at a crawl
   if fingerprint in HONDA_BOSCH and accel <= -0.4 and speed < 1.6:
     return accel - 0.25 # stock diff can be up to around 0.35
