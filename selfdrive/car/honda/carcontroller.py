@@ -104,7 +104,7 @@ def rate_limit_steer(new_steer, last_steer):
   return clip(new_steer, last_steer - MAX_DELTA, last_steer + MAX_DELTA)
 
 def jerk_limit_bosch_accel(new_accel, last_accel):
-  # Max stock jerk seen when braking seen is 0.08 (in a near AEB scenario); positive accel's is 0.04
+  # Max stock jerk seen when braking seen is 0.08 (in a near AEB scenario). Positive accel's typical max jerk is 0.04
   MAX_JERK = 8 * DT_CTRL if new_accel < 0. else 4 * DT_CTRL
   return clip(new_accel, last_accel - MAX_JERK, last_accel + MAX_JERK)
 
