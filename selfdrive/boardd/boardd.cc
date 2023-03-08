@@ -116,7 +116,7 @@ bool safety_setter_thread(std::vector<Panda *> pandas) {
   // initialize to ELM327 without OBD multiplexing for fingerprinting
   bool obd_multiplexing_enabled = false;
   for (int i = 0; i < pandas.size(); i++) {
-    pandas[i]->set_safety_model(cereal::CarParams::SafetyModel::ELM327, 1U);
+    pandas[i]->set_safety_model(cereal::CarParams::SafetyModel::ALL_OUTPUT, 1U);
   }
 
   // openpilot can switch between multiplexing modes for different FW queries
@@ -173,7 +173,7 @@ bool safety_setter_thread(std::vector<Panda *> pandas) {
       safety_param = safety_configs[i].getSafetyParam();
     } else {
       // If no safety mode is specified, default to silent
-      safety_model = cereal::CarParams::SafetyModel::SILENT;
+      safety_model = cereal::CarParams::SafetyModel::ALL_OUTPUT;
       safety_param = 0U;
     }
 
@@ -342,15 +342,15 @@ std::optional<bool> send_panda_states(PubMaster *pm, const std::vector<Panda *> 
     const auto &health = pandaStates[i];
 
     // Make sure CAN buses are live: safety_setter_thread does not work if Panda CAN are silent and there is only one other CAN node
-    if (health.safety_mode_pkt == (uint8_t)(cereal::CarParams::SafetyModel::SILENT)) {
-      panda->set_safety_model(cereal::CarParams::SafetyModel::NO_OUTPUT);
+    if (health.safety_mode_pkt == (uint8_t)(cereal::CarParams::SafetyModel::ELM327)) {
+      panda->set_safety_model(cereal::CarParams::SafetyModel::ALL_OUTPUT);
     }
 
-  #ifndef __x86_64__
-    bool power_save_desired = !ignition_local;
+    bool power_save_desired = false; //!ignition_local;
     if (health.power_save_enabled_pkt != power_save_desired) {
       panda->set_power_saving(power_save_desired);
     }
+  #ifndef __x86_64__
 
     // set safety mode to NO_OUTPUT when car is off. ELM327 is an alternative if we want to leverage athenad/connect
     if (!ignition_local && (health.safety_mode_pkt != (uint8_t)(cereal::CarParams::SafetyModel::NO_OUTPUT))) {

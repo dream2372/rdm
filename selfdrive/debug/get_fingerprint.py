@@ -13,7 +13,8 @@
 import cereal.messaging as messaging
 
 logcan = messaging.sub_sock('can')
-msgs = {}
+msgs_1 = {}
+msgs_4 = {}
 while True:
   lc = messaging.recv_sock(logcan, True)
   if lc is None:
@@ -22,10 +23,16 @@ while True:
   for c in lc.can:
     # read also msgs sent by EON on CAN bus 0x80 and filter out the
     # addr with more than 11 bits
-    if c.src % 0x80 == 0 and c.address < 0x800 and c.address not in (0x7df, 0x7e0, 0x7e8):
-      msgs[c.address] = len(c.dat)
+    if c.src == 1 and c.address < 0x800 and c.address not in (0x7df, 0x7e0, 0x7e8):
+      msgs_1[c.address] = len(c.dat)
+    if c.src == 4 and c.address < 0x800 and c.address not in (0x7df, 0x7e0, 0x7e8):
+      msgs_4[c.address] = len(c.dat)
 
-  fingerprint = ', '.join("%d: %d" % v for v in sorted(msgs.items()))
+  fingerprint_b = ', '.join("%d: %d" % v for v in sorted(msgs_1.items()))
+  fingerprint_a = ', '.join("%d: %d" % v for v in sorted(msgs_4.items()))
 
-  print(f"number of messages {len(msgs)}:")
-  print(f"fingerprint {fingerprint}")
+  print(f"number of fcan b messages {len(msgs_1)}:")
+  print(f"fingerprint {fingerprint_a}")
+
+  print(f"number of fcan a messages {len(msgs_4)}:")
+  print(f"fingerprint {fingerprint_b}")
