@@ -56,8 +56,8 @@ def get_snapshots(frame="roadCameraState", front_frame="driverCameraState"):
   sm = messaging.SubMaster(sockets)
   vipc_clients = {s: VisionIpcClient("camerad", VISION_STREAMS[s], True) for s in sockets}
 
-  # wait 4 sec from camerad startup for focus and exposure
-  while sm[sockets[0]].frameId < int(4. / DT_MDL):
+  # wait 0.5 sec from camerad startup for exposure
+  while sm[sockets[0]].frameId < int(0.5 / DT_MDL):
     sm.update()
 
   for client in vipc_clients.values():
