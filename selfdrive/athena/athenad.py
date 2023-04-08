@@ -550,8 +550,9 @@ def takeSnapshot() -> Optional[Union[str, Dict[str, str]]]:
         return base64.b64encode(f.getvalue()).decode("utf-8")
       else:
         return None
-    return {'jpegBack': b64jpeg(ret[0]),
-            'jpegFront': b64jpeg(ret[1])}
+    return {'jpegBack': b64jpeg(ret[0][1]),
+            'jpegFront': b64jpeg(ret[1][0]),
+            'jpegBack2': b64jpeg(ret[0][0])}
   else:
     raise Exception("not available while camerad is started")
 

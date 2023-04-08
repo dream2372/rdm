@@ -51,26 +51,35 @@ def extract_image(buf, w, h, stride, uv_offset):
   return yuv_to_rgb(y, u, v)
 
 
-def get_snapshots(frame="roadCameraState", front_frame="driverCameraState"):
-  sockets = [s for s in (frame, front_frame) if s is not None]
+def get_snapshots(rear_frame, front_frame):
+  sockets = []
+  for f in rear_frame:
+    sockets.append(f)
+  for f in front_frame:
+    sockets.append(f)
+
+
+  # TODO: how important is the ordering here?
   sm = messaging.SubMaster(sockets)
   vipc_clients = {s: VisionIpcClient("camerad", VISION_STREAMS[s], True) for s in sockets}
-
-  # wait 0.5 sec from camerad startup for exposure
-  while sm[sockets[0]].frameId < int(0.5 / DT_MDL):
-    sm.update()
 
   for client in vipc_clients.values():
     client.connect(True)
 
+  # wait 1 sec from camerad startup for exposure
+  while sm[sockets[0]].frameId < int(1 / DT_MDL):
+    sm.update()
+
   # grab images
-  rear, front = None, None
-  if frame is not None:
-    c = vipc_clients[frame]
-    rear = extract_image(c.recv(), c.width, c.height, c.stride, c.uv_offset)
-  if front_frame is not None:
-    c = vipc_clients[front_frame]
-    front = extract_image(c.recv(), c.width, c.height, c.stride, c.uv_offset)
+  rear, front = [], []
+  for f in rear_frame:
+    c = vipc_clients[f]
+    rear.append(extract_image(c.recv(), c.width, c.height, c.stride, c.uv_offset))
+  if len(front_frame):
+    for f in front_frame:
+      c = vipc_clients[f]
+      front.append(extract_image(c.recv(), c.width, c.height, c.stride, c.uv_offset))
+
   return rear, front
 
 
@@ -101,26 +110,29 @@ def snapshot():
     if not PC:
       managed_processes['camerad'].start()
 
-    frame = "wideRoadCameraState"
-    front_frame = "driverCameraState" if front_camera_allowed else None
-    rear, front = get_snapshots(frame, front_frame)
+    rear_frame = ["roadCameraState", "wideRoadCameraState"]
+    front_frame = ["driverCameraState"] if front_camera_allowed else []
+    rear, front = get_snapshots(rear_frame, front_frame)
   finally:
     managed_processes['camerad'].stop()
     params.put_bool("IsTakingSnapshot", False)
     set_offroad_alert("Offroad_IsTakingSnapshot", False)
 
-  if not front_camera_allowed:
-    front = None
-
   return rear, front
 
 
 if __name__ == "__main__":
-  pic, fpic = snapshot()
-  if pic is not None:
-    print(pic.shape)
-    jpeg_write("/tmp/back.jpg", pic)
-    if fpic is not None:
-      jpeg_write("/tmp/front.jpg", fpic)
+  pics, fpics = snapshot()
+  if pics:
+    for idx, pic in enumerate(pics):
+      name = "back" if len(pics) == 1 else f"back{idx}"
+      print(name)
+      jpeg_write(f"/tmp/{name}.jpg", pic)
+
+    for idx, pic in enumerate(fpics):
+      name = "front" if len(fpics) == 1 else f"front{idx}"
+      print(name)
+      jpeg_write(f"/tmp/{name}.jpg", pic)
+
   else:
     print("Error taking snapshot")
