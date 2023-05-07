@@ -7,7 +7,7 @@ import time
 
 packer = ()
 
-def navController(pm, frame, idx):
+def FakeHonda(pm, frame, idx):
   can_sends = []
   ###### 100hz #####
   for bus in [0,2]:
@@ -139,7 +139,7 @@ def navController(pm, frame, idx):
 
 
     # # tick counter
-    # idx = (idx+1) % 4
+    idx = (idx+1) % 4
 
   if len(can_sends) != 0:
     # print(can_sends)
@@ -156,7 +156,7 @@ def nav_thread():
     while 1:
       # 100hz loop
       frame += 1
-      idx = navController(pm, frame, idx)
+      idx = FakeHonda(pm, frame, idx)
       time.sleep(0.01)
 
 if __name__ == '__main__':
