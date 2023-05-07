@@ -162,8 +162,8 @@ def nav_thread():
 
   while 1:
     # 100hz loop
-    frame += 1
     idx = FakeHonda(pm, frame, idx, packer)
+    frame += 1
     time.sleep(0.01)
 
 if __name__ == '__main__':
