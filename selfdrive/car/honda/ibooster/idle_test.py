@@ -15,6 +15,7 @@ class FakeHonda:
     self.frame = 0
     self.packer = CANPacker('HONDA_MASTER')
     self.pm = messaging.PubMaster(['sendcan'])
+    self.carType = 'CRV' # or ACCORD
 
     self.idx_100 = 0
     self.idx_50 = 0
@@ -38,29 +39,28 @@ class FakeHonda:
       # can_sends.append(self.packer.make_can_msg("PCM_GATEWAYFORWARD_POWERTRAIN_DATA", bus, {'COUNTER':self.idx_100})) # 380
       # can_sends.append(self.packer.make_can_msg("TCM_GATEWAYFORWARD_GEARBOX_CVT", bus, {'COUNTER':self.idx_100})) # 401
       if bus == 0:
-      # bus 0
-        can_sends.append(self.packer.make_can_msg("RADAR_STEERING_CONTROL", 0, {'COUNTER':self.idx_100})) # 228
+        # if self.carType == 'CRV':
+        #   can_sends.append(self.packer.make_can_msg("CRV_IDK_154", 0, {'COUNTER':self.idx_100})) # 340
+        # can_sends.append(self.packer.make_can_msg("RADAR_STEERING_CONTROL", 0, {'COUNTER':self.idx_100})) # 228
         can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", 0, {'COUNTER':self.idx_100})) # 232
-      # 340 not found
       # can_sends.append(self.packer.make_can_msg("EPS_STEER_STATUS", 0, {'COUNTER':self.idx_100})) # 399
       # else:
-        # bus 2
         # can_sends.append(self.packer.make_can_msg("VSA_C7", 2, {'COUNTER':self.idx_100})) # 199
-    # 
-    # # tick counter
     self.idx_100 = (self.idx_100+1) % 4
-    # print(self.idx_100)
 
     ###### 50hz #####
     if (self.frame % 2) == 0:
       for bus in [0,2]:
+        
         # can_sends.append(self.packer.make_can_msg("VSA_STATUS", bus, {'COUNTER':self.idx_50})) # 420
         can_sends.append(self.packer.make_can_msg("OBD2_TCM_1A7", bus, {'COUNTER':self.idx_50})) # 423
         can_sends.append(self.packer.make_can_msg("VSA_STANDSTILL", bus, {'COUNTER':self.idx_50})) # 432
         # can_sends.append(self.packer.make_can_msg("VSA_GATEWAYFORWARD_EPB_STATUS", bus, {'COUNTER':self.idx_50})) # 450
         # can_sends.append(self.packer.make_can_msg("VSA_WHEEL_SPEEDS", bus, {'COUNTER':self.idx_50})) # 464
+        # if self.carType == 'CRV':
+          # can_sends.append(self.packer.make_can_msg("CRV_IDK_1DA", 0, {'COUNTER':self.idx_50})) # 474
         # can_sends.append(self.packer.make_can_msg("RADAR_ACC_CONTROL", bus, {'COUNTER':self.idx_50})) # 479
-        can_sends.append(self.packer.make_can_msg("RADAR_ACC_CONTROL_ON", bus, {'COUNTER':self.idx_50})) # 495
+        # can_sends.append(self.packer.make_can_msg("RADAR_ACC_CONTROL_ON", bus, {'COUNTER':self.idx_50})) # 495
         if bus == 0:
           can_sends.append(self.packer.make_can_msg("VSA_WHEEL_TICKS", bus, {'COUNTER':self.idx_50})) # 441
           # can_sends.append(self.packer.make_can_msg("PCM_GATEWAYFORWARD_1DD", bus, {'COUNTER':self.idx_50})) # 477
@@ -71,7 +71,6 @@ class FakeHonda:
           can_sends.append(self.packer.make_can_msg("PCM_GATEWAYFORWARD_ENGINE_DATA_2", bus, {'COUNTER':self.idx_50})) # 476
           can_sends.append(self.packer.make_can_msg("PCM_GATEWAYFORWARD_ACC_CONTROL_ON_2", bus, {'COUNTER':self.idx_50})) # 493
           can_sends.append(self.packer.make_can_msg("OBD2_IDK_1FB", bus, {'COUNTER':self.idx_50})) # 507
-      # # tick counter
       self.idx_50 = (self.idx_50+1) % 4
       
     ###### 25hz #####
@@ -81,9 +80,8 @@ class FakeHonda:
         # can_sends.append(self.packer.make_can_msg("SRS_39", bus, {'COUNTER':self.idx_25})) # 57
         # can_sends.append(self.packer.make_can_msg("VSA_ROUGH_WHEEL_SPEED", bus, {'COUNTER':self.idx_25})) # 597
         can_sends.append(self.packer.make_can_msg("METER_SCM_BUTTONS", bus, {'COUNTER':self.idx_25})) # 662
-        # if bus == 2:
-        #   # 661 not found
-      # # tick counter
+        if bus == 2 and self.carType == 'CRV':
+          can_sends.append(self.packer.make_can_msg("CRV_IDK_295", 0, {'COUNTER':self.idx_25})) # 661
       self.idx_25 = (self.idx_25+1) % 4
       
     ###### 10hz #####
@@ -96,6 +94,8 @@ class FakeHonda:
         # can_sends.append(self.packer.make_can_msg("PCM_GATEWAYFORWARD_CRUISE", bus, {'COUNTER':self.idx_10})) # 804
         # can_sends.append(self.packer.make_can_msg("METER_SCM_FEEDBACK", bus, {'COUNTER':self.idx_10})) # 806
         can_sends.append(self.packer.make_can_msg("PCM_GATEWAYFORWARD_328", bus, {'COUNTER':self.idx_10})) # 808
+        # if self.carType == 'CRV':
+          # can_sends.append(self.packer.make_can_msg("CRV_IDK_32E", 0, {'COUNTER':self.idx_10})) # 814
         # can_sends.append(self.packer.make_can_msg("RADAR_LKAS_HUD", bus, {'COUNTER':self.idx_10})) # 829
         # can_sends.append(self.packer.make_can_msg("CAMERA_MESSAGES", bus, {'COUNTER':self.idx_10})) # 862
         # can_sends.append(self.packer.make_can_msg("METER_STALK_STATUS", bus, {'COUNTER':self.idx_10})) # 884
@@ -104,12 +104,13 @@ class FakeHonda:
         if bus == 2:
           # can_sends.append(self.packer.make_can_msg("VSA_GATEWAYFORWARD_31B", bus, {'COUNTER':self.idx_10})) # 795
           can_sends.append(self.packer.make_can_msg("OBD2_PCM_32F", bus, {'COUNTER':self.idx_10})) # 815
+          # if self.carType == 'CRV':
+            # can_sends.append(self.packer.make_can_msg("CRV_IDK_331", bus, {'COUNTER':self.idx_10})) # 817
           can_sends.append(self.packer.make_can_msg("OBD2_PCM_339", bus, {'COUNTER':self.idx_10})) # 825
           can_sends.append(self.packer.make_can_msg("OBD2_METER_371", bus, {'COUNTER':self.idx_10})) # 881
           can_sends.append(self.packer.make_can_msg("OBD2_METER_372", bus, {'COUNTER':self.idx_10})) # 882
           # can_sends.append(self.packer.make_can_msg("OBD2_METER_378", bus, {'COUNTER':self.idx_10})) # 888
           # can_sends.append(self.packer.make_can_msg("OBD2_METER_396", bus, {'COUNTER':self.idx_10})) # 918
-      # # tick counter
       self.idx_10 = (self.idx_10+1) % 4
       
     ###### 5hz #####
@@ -120,7 +121,6 @@ class FakeHonda:
       #     can_sends.append(self.packer.make_can_msg("VSA_3D9", bus, {'COUNTER':self.idx_5})) # 985
       #   else:
       #     can_sends.append(self.packer.make_can_msg("OBD2_PCM_3D7", bus, {'COUNTER':self.idx_5})) # 983
-      # # tick counter
       # self.idx_5 = (self.idx_5+1) % 4
 
     ###### 3hz #####
@@ -130,7 +130,8 @@ class FakeHonda:
         can_sends.append(self.packer.make_can_msg("METER_DOORS_STATUS", bus, {'COUNTER':self.idx_3})) # 1029
         # can_sends.append(self.packer.make_can_msg("PCM_GATEWAYFORWARD_40C", bus, {'COUNTER':self.idx_3})) # 1036
         # can_sends.append(self.packer.make_can_msg("TCM_GATEWAYFORWARD_40F", bus, {'COUNTER':self.idx_3})) # 1039
-        can_sends.append(self.packer.make_can_msg("NEW_MSG_445", bus, {'COUNTER':self.idx_3})) # 1093
+        if self.carType == 'CRV':
+          can_sends.append(self.packer.make_can_msg("CRV_IDK_445", bus, {'COUNTER':self.idx_3})) # 1093
         can_sends.append(self.packer.make_can_msg("PCM_GATEWAYFORWARD_454", bus, {'COUNTER':self.idx_3})) # 1108
         if bus == 0:
           can_sends.append(self.packer.make_can_msg("PCM_GATEWAYFORWARD_400", bus, {'COUNTER':self.idx_3})) # 1024
@@ -140,7 +141,6 @@ class FakeHonda:
           # can_sends.append(self.packer.make_can_msg("OBD2_IDK_45B", bus, {'COUNTER':self.idx_3})) # 1115
           can_sends.append(self.packer.make_can_msg("OBD2_PCM_465", bus, {'COUNTER':self.idx_3})) # 1125
           can_sends.append(self.packer.make_can_msg("OBD2_PCM_467", bus, {'COUNTER':self.idx_3})) # 1127
-      # # tick counter
       self.idx_3 = (self.idx_3+1) % 4
 
     ###### 2hz #####
@@ -154,34 +154,19 @@ class FakeHonda:
           can_sends.append(self.packer.make_can_msg("PCM_GATEWAYFORWARD_661", bus, {'COUNTER':self.idx_2})) # 1633
         else:
           can_sends.append(self.packer.make_can_msg("OBD2_METER_510", bus, {'COUNTER':self.idx_2})) # 1296
-      # # tick counter
       self.idx_2 = (self.idx_2+1) % 4
 
     ###### 1hz #####
     if (self.frame % 100) == 0:
       bus = 0
-      # print(f"Time is {self.frame}")
       can_sends.append(self.packer.make_can_msg("VSA_590", bus, {'COUNTER':self.idx_1})) # 1424
       # can_sends.append(self.packer.make_can_msg("RADAR_640", bus, {'COUNTER':self.idx_1})) # 1600
       # can_sends.append(self.packer.make_can_msg("RADAR_641", bus, {'COUNTER':self.idx_1})) # 1601
-      can_sends.append(self.packer.make_can_msg("NEW_MSG_652", bus, {'COUNTER':self.idx_1})) # 1618
-
-      # # tick counter
+      # if self.carType == 'CRV':
+        # can_sends.append(self.packer.make_can_msg("CRV_IDK_652", bus, {'COUNTER':self.idx_1})) # 1618
       self.idx_1 = (self.idx_1+1) % 4
 
-      # if idx == 0:
-      #   can_sends.append(NAV_C_1_0)
-      # elif idx == 1:
-      #   can_sends.append(NAV_C_1_1)
-      # elif idx == 2:
-      #   can_sends.append(NAV_C_1_2)
-      # else:
-      #   can_sends.append(NAV_C_1_3)
-
-
-
-
-    if len(can_sends) != 0:
+    if len(can_sends):
       self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=True))
 
     return
@@ -189,6 +174,7 @@ class FakeHonda:
 def nav_thread():
   fake_car = FakeHonda()
   while 1:
+    # TODO: trigger off of 0xe7 on bus 2 instead
     # 100hz loop
     fake_car.send()
     fake_car.frame += 1
