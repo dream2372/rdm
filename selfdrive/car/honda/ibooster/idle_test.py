@@ -4,7 +4,6 @@ import cereal.messaging as messaging
 from opendbc.can.packer import CANPacker
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.car.car_helpers import get_one_can
-import time
 
 class FakeHonda:
   def __init__(self):
@@ -155,7 +154,7 @@ class FakeHonda:
                                                                                'SEATBELT_PASS_UNLATCHED': 1,
                                                                                'PASS_AIRBAG_OFF': 1,
                                                                                'COUNTER':self.idx_10})) # 773
-        can_sends.append(self.packer.make_can_msg("METER_CAR_SPEED", bus, {'NEW_SIGNAL_2': 1,
+        can_sends.append(self.packer.make_can_msg("METER_CAR_SPEED", bus, {'NEW_SIGNAL_1': 1,
                                                                            'LOCK_STATUS': 1,
                                                                            'NEW_SIGNAL_2': 2,
                                                                            'COUNTER':self.idx_10})) # 777
