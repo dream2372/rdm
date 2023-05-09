@@ -51,11 +51,17 @@ class FakeHonda:
                                                                                 'COUNTER':self.idx_100})) # 330
       can_sends.append(self.packer.make_can_msg("TCM_GATEWAYFORWARD_ENGINE_DATA", bus, {'COUNTER':self.idx_100})) # 344
       can_sends.append(self.packer.make_can_msg("PCM_GATEWAYFORWARD_POWERTRAIN_DATA", bus, {'BOH_17C': 1,
-                                                                                              'COUNTER':self.idx_100})) # 380
-      can_sends.append(self.packer.make_can_msg("TCM_GATEWAYFORWARD_GEARBOX_CVT", bus, {'GEAR_SHIFTER': 1,
-                                                                                        'BOH': 33,
-                                                                                        'NEW_SIGNAL_6': 1,
-                                                                                        'COUNTER':self.idx_100})) # 401
+                                                                                            'COUNTER':self.idx_100})) # 380
+      # # if self.carType == 'CRV':
+      # can_sends.append(self.packer.make_can_msg("TCM_GATEWAYFORWARD_GEARBOX_CVT", bus, {'GEAR_SHIFTER': 1,
+      #                                                                                   'BOH': 33,
+      #                                                                                   'NEW_SIGNAL_6': 1,
+      #                                                                                   'COUNTER':self.idx_100})) # 401
+      # else:
+      can_sends.append(self.packer.make_can_msg("GEARBOX_10SPEED", bus, {'GEAR_SHIFTER': 4,
+                                                                         'GEAR': 1,
+                                                                         'COUNTER':self.idx_100})) # 419
+      
       if bus == 0:
         if self.carType == 'CRV':
           can_sends.append(self.packer.make_can_msg("CRV_IDK_154", 0, {'NEW_SIGNAL_2': 255,
@@ -302,6 +308,8 @@ class FakeHonda:
       if self.carType == 'CRV':
         can_sends.append(self.packer.make_can_msg("CRV_IDK_652", bus, {'NEW_SIGNAL_4': 4,
                                                                        'COUNTER':self.idx_1})) # 1618
+      else:
+        can_sends.append(self.packer.make_can_msg("ACCORD_IDK_674", 2, {})) # 1618
       self.idx_1 = (self.idx_1+1) % 4
 
     if len(can_sends):
