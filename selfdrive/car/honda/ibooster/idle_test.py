@@ -77,7 +77,7 @@ class FakeHonda:
                                                                 'WTF_IS_THIS': 2,
                                                                 'COUNTER':self.idx_100})) # 199
       # REQUIRED for CAN control, DUH
-      can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", bus, {'LIMIT_TRAVEL': 1,
+      can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", bus, {'SET_1_0': 1,
                                                                               'COMPUTER_BRAKE': self.get_computer_brake(),
                                                                               'COMPUTER_BRAKE_REQUEST': self.braking,
                                                                               'COUNTER':self.idx_100})) # 232

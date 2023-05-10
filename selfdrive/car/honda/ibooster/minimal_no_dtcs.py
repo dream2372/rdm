@@ -5,6 +5,7 @@ from opendbc.can.packer import CANPacker
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.car.car_helpers import get_one_can
 
+# build the brake command test list
 brake_range = []
 rate = 1000
 step = 10
@@ -29,7 +30,7 @@ class FakeHonda:
     # Initial values
     self.braking = False
     self.computer_brake = 0
-    self.speed = 0. # not required
+    self.speed = 0. # does setting this fix the travel limit?
 
     self.ignition = False
 
@@ -55,7 +56,7 @@ class FakeHonda:
     return self.computer_brake
     
 
-  def send(self):
+  def send(self, command=True):
     can_sends = []
 
     ###### 100hz #####
@@ -69,7 +70,8 @@ class FakeHonda:
                                                               # 'WTF_IS_THIS': 2,
                                                               'COUNTER':self.idx_100})) # 199
     # REQUIRED on bus 0 for CAN control, DUH
-    can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", 0, {'LIMIT_TRAVEL': 1, # REQUIRED
+    if command:
+      can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", 0, {'SET_1_0': 1,
                                                                             'COMPUTER_BRAKE': self.get_computer_brake(),
                                                                             'COMPUTER_BRAKE_REQUEST': self.braking,
                                                                             'COUNTER':self.idx_100})) # 232
@@ -82,10 +84,12 @@ class FakeHonda:
       can_sends.append(self.packer.make_can_msg("VSA_WHEEL_TICKS", 2, {'COUNTER':self.idx_50})) # 441
       self.idx_50 = (self.idx_50+1) % 4
 
-    if len(can_sends):
-      self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=True))
-
-    return
+    if command:
+      if len(can_sends):
+        self.pm.send('sendcan', can_list_to_can_capnp(can_sends, msgtype='sendcan', valid=True))
+      return
+    else:
+      return can_sends
 
 def nav_thread():
   can_sock = messaging.sub_sock('can')
