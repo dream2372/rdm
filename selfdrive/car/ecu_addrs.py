@@ -11,8 +11,6 @@ from system.swaglog import cloudlog
 
 EcuAddrBusType = Tuple[int, Optional[int], int]
 
-# Honda Accord iBooster 
-IGNORED_MSGS = [0xe7, 0x1be, 0x1d5, 0x686]
 
 def make_tester_present_msg(addr, bus, subaddr=None):
   dat = [0x02, SERVICE_TYPE.TESTER_PRESENT, 0x0]
@@ -62,9 +60,6 @@ def get_ecu_addrs(logcan: messaging.SubSocket, sendcan: messaging.PubSocket, que
             continue
 
           subaddr = None if (msg.address, None, msg.src) in responses else msg.dat[0]
-          print(msgs)
-          if msg.address not in IGNORED_MSGS or msgs.addr:
-            print(f"CAN-RX: {hex(msg.address)} - 0x{bytes.hex(msg.dat)}")
           if (msg.address, subaddr, msg.src) in responses and is_tester_present_response(msg, subaddr):
             if debug:
               print(f"CAN-RX: {hex(msg.address)} - 0x{bytes.hex(msg.dat)}")
@@ -82,7 +77,7 @@ if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='Get addresses of all ECUs')
   parser.add_argument('--debug', action='store_true')
   parser.add_argument('--bus', type=int, default=1)
-  parser.add_argument('--timeout', type=float, default=2.0)
+  parser.add_argument('--timeout', type=float, default=1.0)
   args = parser.parse_args()
 
   logcan = messaging.sub_sock('can')
