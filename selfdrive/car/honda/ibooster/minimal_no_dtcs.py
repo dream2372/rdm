@@ -4,20 +4,6 @@ import cereal.messaging as messaging
 from opendbc.can.packer import CANPacker
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.car.car_helpers import get_one_can
-
-# build the brake command test list
-brake_range = []
-rate = 1000
-step = 10
-
-for a in range(0, rate, step):
-    brake_range.append(a)
-
-for b in range(rate, -rate, -step):
-    brake_range.append(b)
-
-for c in range(-rate, 0, step):
-    brake_range.append(c)
     
 
 class FakeHonda:
@@ -30,7 +16,8 @@ class FakeHonda:
     # Initial values
     self.braking = False
     self.computer_brake = 0
-    self.speed = 0. # does setting this fix the travel limit?
+    # zero speed after hitting the travel out of bounds results in travel limited again
+    self.speed = 256. # set to 0. kph later. This gets rid of the limited travel in CAN control mode
 
     self.ignition = False
 
@@ -40,19 +27,39 @@ class FakeHonda:
     self.brake_rate = 1000 # what's the unit?
   
   def get_computer_brake(self):
+    if self.frame == 5: # frame 3 seems to work okay
+      self.speed = 0.
     # Wait 3 seconds for the init to finish
-    if self.frame == 1300:
-      # reset
+    # if self.frame == 1300:
+    #   # reset
+    #   self.frame = 0
+    # elif self.frame > 1100:
+    #   self.braking = False
+    #   self.computer_brake = 0
+    # elif self.frame > 1000:
+    #   self.computer_brake = -1000
+    if self.frame == 999:
       self.frame = 0
-    elif self.frame > 1100:
-      self.braking = False
+    elif self.frame == 800:
       self.computer_brake = 0
-    elif self.frame > 1000:
-      self.computer_brake = -1000
-    elif self.frame > 300:
+      print('stop')
+    elif self.frame == 700:
+      self.computer_brake = -500
+      print('out') 
+    elif self.frame == 500:
+      self.computer_brake = 0
+      print('stop')
+    elif self.frame == 400:
+      self.computer_brake = 500
+      print('in')
+
+    elif self.frame == 300:
       self.braking = True
-      self.computer_brake = brake_range[(self.frame - 300) % len(brake_range)] # 3500 is near max. 4000 is too much
-    print(self.computer_brake)
+      self.computer_brake = 50 #brake_range[(self.frame - 300) % len(brake_range)] # 3500 is near max. 4000 is too much
+    # print(self.frame)
+    elif self.frame == 1:
+      self.braking = False
+      self.computer_brake = -3000
     return self.computer_brake
     
 
@@ -71,7 +78,8 @@ class FakeHonda:
                                                               'COUNTER':self.idx_100})) # 199
     # REQUIRED on bus 0 for CAN control, DUH
     if command:
-      can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", 0, {'SET_1_0': 1,
+      can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", 0, {'XMISSION_SPEED2_SMOOTHED': self.speed,
+                                                                            'SET_1_0': 1,
                                                                             'COMPUTER_BRAKE': self.get_computer_brake(),
                                                                             'COMPUTER_BRAKE_REQUEST': self.braking,
                                                                             'COUNTER':self.idx_100})) # 232
