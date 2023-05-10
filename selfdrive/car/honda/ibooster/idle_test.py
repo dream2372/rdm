@@ -5,6 +5,20 @@ from opendbc.can.packer import CANPacker
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 from selfdrive.car.car_helpers import get_one_can
 
+brake_range = []
+rate = 2000
+step = 175
+
+for a in range(0, rate, step):
+    brake_range.append(a)
+
+for b in range(rate, -rate, -step):
+    brake_range.append(b)
+
+for c in range(-rate, 0, step):
+    brake_range.append(c)
+    
+
 class FakeHonda:
   def __init__(self):
 
@@ -14,12 +28,15 @@ class FakeHonda:
     self.pm = messaging.PubMaster(['sendcan'])
     self.carType = 'CRV' # or ACCORD
 
-    self.ignition = True
-    self.limit_travel = False
-    self.braking = True
+    # Initial values
+    self.braking = False
     self.computer_brake = 0
     self.speed = 0.
-    self.driver_door = True
+
+    self.ignition = True
+    # TODO: REIMPLEMENT?
+    # self.limit_travel = True # CR-V set this to true always.
+    self.driver_door = False
 
     self.idx_100 = 0
     self.idx_50 = 0
@@ -29,12 +46,20 @@ class FakeHonda:
     self.idx_3 = 0
     self.idx_2 = 0
     self.idx_1 = 0
+
+    self.brake_rate = 1000 # what's the unit?
   
   def get_computer_brake(self):
-    if self.frame == 300:
-      self.computer_brake = 1000 # 3500 is near max. 4000 is too much
-    elif self.frame >= 401:
-      self.computer_brake -= 10
+    # Wait 3 seconds for the init to finish
+    # if self.frame == 1300:
+    #   self.frame = 0
+    # elif self.frame > 1000:
+    #   self.braking = False
+    #   self.computer_brake = 0
+    if self.frame > 300:
+      self.braking = True
+      self.computer_brake = brake_range[(self.frame - 300) % len(brake_range)] # 3500 is near max. 4000 is too much
+      self.computer_brake = self.computer_brake if self.computer_brake != 0 else -1
     print(self.computer_brake)
     return self.computer_brake
     
@@ -77,8 +102,8 @@ class FakeHonda:
                                                                       'NEW_SIGNAL_3': 93,
                                                                       'COUNTER':self.idx_100})) # 340
       can_sends.append(self.packer.make_can_msg("RADAR_STEERING_CONTROL", bus, {'COUNTER':self.idx_100})) # 228
-      can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", bus, {'LIMIT_TRAVEL': int(self.limit_travel),
-                                                                            'COMPUTER_BRAKE': int(self.get_computer_brake()),
+      can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", bus, {'LIMIT_TRAVEL': self.braking,
+                                                                            'COMPUTER_BRAKE': self.get_computer_brake(),
                                                                             'COMPUTER_BRAKE_REQUEST': self.braking,
                                                                             'COUNTER':self.idx_100})) # 232
       can_sends.append(self.packer.make_can_msg("EPS_STEER_STATUS", bus, {'STEER_TORQUE_SENSOR': 0.111,
