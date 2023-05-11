@@ -5,6 +5,7 @@ from opendbc.can.packer import CANPacker
 from selfdrive.boardd.boardd import can_list_to_can_capnp
 # from common.numpy_fast import clip
 
+
 # 4650 works but is A LOT. A max of 3500 is reasonable with no push rod load. 
 # With load, high values like these could damage the booster. It only seems to have brown out protection.
 BRAKE_RATE_LIMIT = 200
