@@ -62,19 +62,19 @@ class FakeHonda:
     can_sends = []
 
     ###### 100hz #####
-    # REQUIRED on bus 0 TO NOT SET PCM LOSS DTC. BRAKE HOLD UNTESTED!
+    # REQUIRED TO NOT SET PCM COMMS LOSS DTC. BRAKE HOLD UNTESTED!
     can_sends.append(self.packer.make_can_msg("PCM_GATEWAYFORWARD_POWERTRAIN_DATA", 0, {#'BOH_17C': 1,
                                                                                             'COUNTER':self.idx_100})) # 380
-    # REQUIRED on bus 0 for CAN control
+    # REQUIRED for CAN control
     # Blank works. BRAKE HOLD UNTESTED!
     can_sends.append(self.packer.make_can_msg("VSA_C7", 0, {#'IGN':int(self.ignition),
                                                               # 'NEW_SIGNAL_3': 24,
                                                               # 'NEW_SIGNAL_5': 1,
                                                               # 'WTF_IS_THIS': 2,
                                                               'COUNTER':self.idx_100})) # 199
-    # REQUIRED on bus 0 for CAN control, DUH. BRAKE HOLD UNTESTED!
+    # REQUIRED for CAN control, DUH. BRAKE HOLD UNTESTED!
     if command:
-      can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", 0, {'XMISSION_SPEED2_SMOOTHED': self.get_speed(),
+      can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", 0, {'SPEED': self.get_speed(),
                                                                             'SET_1_0': 1,
                                                                             'COMPUTER_BRAKE': self.get_computer_brake(),
                                                                             'COMPUTER_BRAKE_REQUEST': self.braking,
@@ -84,8 +84,8 @@ class FakeHonda:
 
     ###### 50hz #####
     if (self.frame % 2) == 0:
-      # REQUIRED on bus 2 for CAN control. BRAKE HOLD UNTESTED!
-      can_sends.append(self.packer.make_can_msg("VSA_WHEEL_TICKS", 2, {'COUNTER':self.idx_50})) # 441
+      # REQUIRED for CAN control. BRAKE HOLD UNTESTED!
+      can_sends.append(self.packer.make_can_msg("VSA_WHEEL_TICKS", 0, {'COUNTER':self.idx_50})) # 441
       self.idx_50 = (self.idx_50+1) % 4
 
     if command:

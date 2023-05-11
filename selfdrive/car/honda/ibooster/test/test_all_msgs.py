@@ -10,13 +10,13 @@ rate = 500
 step = 10
 
 for a in range(0, rate, step):
-    brake_range.append(a)
+  brake_range.append(a)
 
 for b in range(rate, -rate, -step):
-    brake_range.append(b)
+  brake_range.append(b)
 
 for c in range(-rate, 0, step):
-    brake_range.append(c)
+  brake_range.append(c)
     
 
 class FakeHonda:
