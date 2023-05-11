@@ -73,7 +73,7 @@ class FakeHonda:
                                                               'COUNTER':self.idx_100})) # 199
     # REQUIRED on bus 0 for CAN control, DUH. BRAKE HOLD UNTESTED!
     if command:
-      can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", 0, {'XMISSION_SPEED2_SMOOTHED': self.get_speed(),
+      can_sends.append(self.packer.make_can_msg("VSA_IBOOSTER_COMMAND", 0, {'SPEED': self.get_speed(),
                                                                             'SET_1_0': 1,
                                                                             'COMPUTER_BRAKE': self.get_computer_brake(),
                                                                             'COMPUTER_BRAKE_REQUEST': self.braking,
@@ -84,7 +84,8 @@ class FakeHonda:
     ###### 50hz #####
     if (self.frame % 2) == 0:
       # REQUIRED on bus 2 for CAN control. BRAKE HOLD UNTESTED!
-      can_sends.append(self.packer.make_can_msg("VSA_WHEEL_TICKS", 2, {'COUNTER':self.idx_50})) # 441
+      can_sends.append(self.packer.make_can_msg("VSA_WHEEL_TICKS", 0, {'COUNTER':self.idx_50})) # 441
+      # can_sends.append(self.packer.make_can_msg("VSA_WHEEL_TICKS", 2, {'COUNTER':self.idx_50})) # 441
       self.idx_50 = (self.idx_50+1) % 4
 
     if command:
