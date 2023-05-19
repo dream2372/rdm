@@ -1,0 +1,21 @@
+[General]
+chart_column_count=2
+chart_height=350
+chart_range=1182
+chart_series_type=1
+drag_direction=0
+fps=30
+geometry=@ByteArray(\x1\xd9\xd0\xcb\0\x3\0\0\0\0\0H\0\0\0\x1b\0\0\a\x7f\0\0\x4\xaf\0\0\x1\v\0\0\x1\x3\0\0\x5N\0\0\x2S\0\0\0\0\x2\0\0\0\a\x80\0\0\0H\0\0\0@\0\0\a\x7f\0\0\x4\xaf)
+last_dir=/home/pi/Desktop
+last_route_dir=/home/pi
+log_livestream=true
+log_path=/home/pi/cabana_live_stream/
+max_cached_minutes=30
+message_header_state_v3=@ByteArray(\0\0\0\xff\0\0\0\0\0\0\0\x1\0\0\0\0\0\0\0\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x3N\0\0\0\x6\x1\x1\0\0\0\0\0\0\0\0\0\0\0\0\0\0\x64\xff\xff\xff\xff\0\0\0\x84\0\0\0\0\0\0\0\x6\0\0\x1\b\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\x64\0\0\0\x1\0\0\0\0\0\0\0\xb6\0\0\0\x1\0\0\0\x2\0\0\x3\xe8\0\0\0\0\0)
+multiple_lines_bytes=true
+recent_files=/home/pi/Desktop/HONDA_MASTER.dbc, /home/pi/openpilot/opendbc/honda_civic_hatchback_ex_2017_can_generated.dbc, /home/pi/openpilot/opendbc/honda_civic_ex_2022_can_generated.dbc, /home/pi/openpilot/opendbc/honda_body_2017.dbc
+sparkline_range=30
+suppress_defined_signals=false
+theme=0
+video_splitter_state=@ByteArray(\0\0\0\xff\0\0\0\x1\0\0\0\x2\0\0\0\xab\0\0\0\x65\x1\xff\xff\xff\xff\x1\0\0\0\x2\0)
+window_state=@ByteArray(\0\0\0\xff\0\0\0\0\xfd\0\0\0\x2\0\0\0\0\0\0\x3\xf0\0\0\x4\x46\xfc\x2\0\0\0\x1\xfb\0\0\0\x1a\0M\0\x65\0s\0s\0\x61\0g\0\x65\0s\0P\0\x61\0n\0\x65\0l\x1\0\0\0\x14\0\0\x4\x46\0\0\0\x93\0\xff\xff\xff\0\0\0\x1\0\0\x1\x88\0\0\x4\x46\xfc\x2\0\0\0\x1\xfb\0\0\0\x14\0V\0i\0\x64\0\x65\0o\0P\0\x61\0n\0\x65\0l\x1\0\0\0\x14\0\0\x4\x46\0\0\x1'\0\xff\xff\xff\0\0\x1\xb8\0\0\x4\x46\0\0\0\x4\0\0\0\x4\0\0\0\b\0\0\0\b\xfc\0\0\0\0)

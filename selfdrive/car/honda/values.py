@@ -45,6 +45,9 @@ class CarControllerParams:
     self.STEER_LOOKUP_BP = [v * -1 for v in CP.lateralParams.torqueBP][1:][::-1] + list(CP.lateralParams.torqueBP)
     self.STEER_LOOKUP_V = [v * -1 for v in CP.lateralParams.torqueV][1:][::-1] + list(CP.lateralParams.torqueV)
 
+    if CP.carFingerprint in HONDA_BOSCH:
+      self.BOSCH_BUTTONS_FREQ = 25 if CP.carFingerprint in HONDA_BOSCH_RADARLESS else 50 #hz
+
 
 class HondaFlags(IntFlag):
   # Bosch models with alternate set of LKAS_HUD messages
@@ -57,6 +60,11 @@ class CruiseButtons:
   DECEL_SET = 3
   CANCEL = 2
   MAIN = 1
+  NONE = 0
+
+  # These are used in a different byte from the above values
+  DISTANCE = 3
+  LKAS = 1
 
 
 # See dbc files for info on values

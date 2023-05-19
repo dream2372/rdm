@@ -6,7 +6,7 @@ from common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
 from selfdrive.car import create_gas_interceptor_command
 from selfdrive.car.honda import hondacan
-from selfdrive.car.honda.values import CruiseButtons, VISUAL_HUD, HONDA_BOSCH, HONDA_BOSCH_RADARLESS, HONDA_NIDEC_ALT_PCM_ACCEL, CarControllerParams
+from selfdrive.car.honda.values import CruiseButtons, CarControllerParams, VISUAL_HUD, HONDA_BOSCH, HONDA_BOSCH_RADARLESS, HONDA_NIDEC_ALT_PCM_ACCEL
 from selfdrive.controls.lib.drive_helpers import rate_limit
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
@@ -202,11 +202,24 @@ class CarController:
     if not self.CP.openpilotLongitudinalControl:
       if self.frame % 2 == 0 and self.CP.carFingerprint not in HONDA_BOSCH_RADARLESS:  # radarless cars don't have supplemental message
         can_sends.append(hondacan.create_bosch_supplemental_1(self.packer, self.CP.carFingerprint))
-      # If using stock ACC, spam cancel command to kill gas when OP disengages.
-      if pcm_cancel_cmd:
-        can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.CANCEL, self.CP.carFingerprint))
-      elif CC.cruiseControl.resume:
-        can_sends.append(hondacan.spam_buttons_command(self.packer, CruiseButtons.RES_ACCEL, self.CP.carFingerprint))
+
+      # Send buttons to camera (radarless) when engaged. With radar, spam when needed.
+      if self.frame % ((1 / DT_CTRL) / self.params.BOSCH_BUTTONS_FREQ) == 0:
+        button_value, setting_value = 0, 0
+        # Priority: System cancel > User (radarless only) > Auto resume
+        if pcm_cancel_cmd:
+          button_value = CruiseButtons.CANCEL
+        elif bool(CS.cruise_buttons) and self.CP.carFingerprint in HONDA_BOSCH_RADARLESS:
+          button_value = CS.cruise_buttons
+        elif CC.cruiseControl.resume:
+          button_value = CruiseButtons.RES_ACCEL
+
+        # Radarless: Stock LKAS can cause a forced disengagement due to steer timeout. Disable it if it's enabled.
+        if self.CP.carFingerprint in HONDA_BOSCH_RADARLESS and CS.cruise_setting != CruiseButtons.LKAS:
+          disable_lkas = CS.lkas_hud['ENABLED'] and not bool(CS.cruise_setting)
+          setting_value = CruiseButtons.LKAS if disable_lkas else CS.cruise_setting
+        if (CC.enabled and self.CP.carFingerprint in HONDA_BOSCH_RADARLESS) or bool(button_value):
+          can_sends.append(hondacan.create_buttons_command(self.packer, button_value, setting_value, self.CP.carFingerprint, CS.buttons_byte2))
 
     else:
       # Send gas and brake commands.
