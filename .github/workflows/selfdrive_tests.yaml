@@ -2,9 +2,9 @@ name: selfdrive
 
 on:
   push:
-    branches:
-      - master
-  pull_request:
+    # branches:
+      # - master
+  # pull_request:
 
 concurrency:
   group: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' && github.run_id || github.head_ref || github.ref }}-${{ github.workflow }}-${{ github.event_name }}

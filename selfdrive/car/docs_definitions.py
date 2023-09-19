@@ -184,6 +184,11 @@ class CommonFootnote(Enum):
     "If the Driver Support Unit (DSU) is disconnected, openpilot ACC will replace " +
     "stock ACC. <b><i>NOTE: disconnecting the DSU disables Automatic Emergency Braking (AEB).</i></b>",
     Column.LONGITUDINAL)
+  VARIABLE_STEER_SPEED = CarFootnote(
+    "ALC will engage once the car has exceeded the higher speed listed and will then disengage at the lower speed. " +
+    "ALC may disengage when certain vehicle functions are used such as low/high speed windshield wipers " +
+    "or after pressing the brake pedal.",
+    Column.FSR_STEERING)
 
 
 def get_footnotes(footnotes: List[Enum], column: Column) -> List[Enum]:
@@ -260,12 +265,14 @@ class CarInfo:
     elif CP.openpilotLongitudinalControl and not CP.enableDsu:
       op_long = "openpilot"
 
-    # min steer & enable speed columns
-    # TODO: set all the min steer speeds in carParams and remove this
-    if self.min_steer_speed is not None:
-      assert CP.minSteerSpeed == 0, f"{CP.carFingerprint}: Minimum steer speed set in both CarInfo and CarParams"
-    else:
-      self.min_steer_speed = CP.minSteerSpeed
+    # min steer & enable speed columns. Allow for overrides in values.py in nuanced cases
+    self.min_steer_speed = CP.minSteerEnableSpeed if self.min_steer_speed is None else self.min_steer_speed
+    min_steer_speed = f"{max(self.min_steer_speed * CV.MS_TO_MPH, 0):.0f} mph"
+
+    # handle vehicles with variable minSteerSpeeds
+    if CP.minSteerEnableSpeed > CP.minSteerDisableSpeed:
+      min_steer_speed = f"{max(CP.minSteerEnableSpeed * CV.MS_TO_MPH, 0):.0f}/{max(CP.minSteerDisableSpeed * CV.MS_TO_MPH, 0):.0f} mph"
+      self.footnotes.append(CommonFootnote.VARIABLE_STEER_SPEED)
 
     # TODO: set all the min enable speeds in carParams correctly and remove this
     if self.min_enable_speed is None:
@@ -296,7 +303,7 @@ class CarInfo:
       Column.PACKAGE: self.package,
       Column.LONGITUDINAL: op_long,
       Column.FSR_LONGITUDINAL: f"{max(self.min_enable_speed * CV.MS_TO_MPH, 0):.0f} mph",
-      Column.FSR_STEERING: f"{max(self.min_steer_speed * CV.MS_TO_MPH, 0):.0f} mph",
+      Column.FSR_STEERING: min_steer_speed,
       Column.STEERING_TORQUE: Star.EMPTY,
       Column.AUTO_RESUME: Star.FULL if self.auto_resume else Star.EMPTY,
       Column.HARDWARE: hardware_col,

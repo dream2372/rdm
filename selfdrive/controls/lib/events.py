@@ -235,11 +235,15 @@ def below_engage_speed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.
 
 
 def below_steer_speed_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:
+  audible_alert = AudibleAlert.none if CS.vEgo < (5 * CV.MPH_TO_MS) else AudibleAlert.prompt
+  msg_end = f". Drive above {get_display_speed(CP.minSteerEnableSpeed, metric)}"
+  if CS.steerActive:
+      msg_end = f" Below {get_display_speed(CP.minSteerDisableSpeed, metric)}"
   return Alert(
-    f"Steer Unavailable Below {get_display_speed(CP.minSteerSpeed, metric)}",
+    f"Steering Unavailable{msg_end}",
     "",
     AlertStatus.userPrompt, AlertSize.small,
-    Priority.LOW, VisualAlert.steerRequired, AudibleAlert.prompt, 0.4)
+    Priority.LOW, VisualAlert.steerRequired, audible_alert, 0.4)
 
 
 def calibration_incomplete_alert(CP: car.CarParams, CS: car.CarState, sm: messaging.SubMaster, metric: bool, soft_disable_time: int) -> Alert:

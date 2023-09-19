@@ -88,6 +88,8 @@ class CarInterface(CarInterfaceBase):
       if fw.ecu == "eps" and b"," in fw.fwVersion:
         eps_modified = True
 
+    # base value applicable to most models
+    ret.minSteerEnableSpeed, ret.minSteerDisableSpeed = 12. * CV.MPH_TO_MS, 12. * CV.MPH_TO_MS
     if candidate == CAR.CIVIC:
       ret.mass = 1326.
       ret.wheelbase = 2.70
@@ -102,6 +104,7 @@ class CarInterface(CarInterfaceBase):
         # note: max request allowed is 4096, but request is capped at 3840 in firmware, so modifications result in 2x max
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2560, 8000], [0, 2560, 3840]]
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.3], [0.1]]
+        ret.minSteerEnableSpeed, ret.minSteerDisableSpeed = 0., 0.
       else:
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2560], [0, 2560]]
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[1.1], [0.33]]
@@ -113,6 +116,11 @@ class CarInterface(CarInterfaceBase):
       ret.steerRatio = 15.38  # 10.93 is end-to-end spec
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
+      # TODO: 2017-2018 has a minSteerSpeed of 12mph. 2019+ has a minSteerSpeed of 2mph.
+      # Setting it to 12 would break steering down to 2 mph and vice versa.
+      ret.minSteerEnableSpeed, ret.minSteerDisableSpeed = 2. * CV.MPH_TO_MS, 2. * CV.MPH_TO_MS
+      if candidate == CAR.CIVIC_2022:
+        ret.minSteerEnableSpeed, ret.minSteerDisableSpeed = 0., 0.
 
     elif candidate in (CAR.ACCORD, CAR.ACCORDH):
       ret.mass = 3279. * CV.LB_TO_KG
@@ -124,8 +132,10 @@ class CarInterface(CarInterfaceBase):
 
       if eps_modified:
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.3], [0.09]]
+        ret.minSteerEnableSpeed, ret.minSteerDisableSpeed = 0., 0.
       else:
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.6], [0.18]]
+        ret.minSteerEnableSpeed, ret.minSteerDisableSpeed = 3. * CV.MPH_TO_MS, 3. * CV.MPH_TO_MS
 
     elif candidate == CAR.ACURA_ILX:
       ret.mass = 3095. * CV.LB_TO_KG
@@ -135,6 +145,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 3840], [0, 3840]]  # TODO: determine if there is a dead zone at the top end
       ret.tireStiffnessFactor = 0.72
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
+      ret.minSteerEnableSpeed, ret.minSteerDisableSpeed = 25. * CV.MPH_TO_MS, 25. * CV.MPH_TO_MS
 
     elif candidate in (CAR.CRV, CAR.CRV_EU):
       ret.mass = 3572. * CV.LB_TO_KG
@@ -204,6 +215,7 @@ class CarInterface(CarInterfaceBase):
         ret.wheelSpeedFactor = 1.025
       else:
         ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]  # TODO: can probably use some tuning
+        ret.minSteerEnableSpeed, ret.minSteerDisableSpeed = 0., 0.
 
     elif candidate == CAR.ACURA_RDX:
       ret.mass = 3935. * CV.LB_TO_KG
@@ -222,6 +234,10 @@ class CarInterface(CarInterfaceBase):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 3840], [0, 3840]]
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.2], [0.06]]
       ret.tireStiffnessFactor = 0.677
+      # ret.minSteerEnableSpeed, ret.minSteerDisableSpeed = 3. * CV.MPH_TO_MS, 3. * CV.MPH_TO_MS
+      # Simulate the 2021+ Odyssey
+      ret.minSteerEnableSpeed = 46.5 * CV.MPH_TO_MS
+      ret.minSteerDisableSpeed = 36.5 * CV.MPH_TO_MS
 
     elif candidate in (CAR.ODYSSEY, CAR.ODYSSEY_CHN):
       ret.mass = 1900.
@@ -234,6 +250,8 @@ class CarInterface(CarInterfaceBase):
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 32767], [0, 32767]]  # TODO: determine if there is a dead zone at the top end
       else:
         ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
+      # TODO: Is this correct for CAR.ODYSSEY_CHN??
+      ret.minSteerEnableSpeed, ret.minSteerDisableSpeed = 0., 0.
 
     elif candidate == CAR.PILOT:
       ret.mass = 4278. * CV.LB_TO_KG  # average weight
@@ -261,6 +279,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
       ret.tireStiffnessFactor = 0.82
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.6], [0.18]]
+      ret.minSteerEnableSpeed, ret.minSteerDisableSpeed = 3. * CV.MPH_TO_MS, 3. * CV.MPH_TO_MS
 
     elif candidate == CAR.HONDA_E:
       ret.mass = 3338.8 * CV.LB_TO_KG
@@ -270,6 +289,7 @@ class CarInterface(CarInterfaceBase):
       ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
       ret.tireStiffnessFactor = 0.82
       ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.6], [0.18]] # TODO: can probably use some tuning
+      ret.minSteerEnableSpeed, ret.minSteerDisableSpeed = 3. * CV.MPH_TO_MS, 3. * CV.MPH_TO_MS
 
     else:
       raise ValueError(f"unsupported car {candidate}")
