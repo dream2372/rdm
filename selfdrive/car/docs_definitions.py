@@ -185,9 +185,10 @@ class CommonFootnote(Enum):
     "stock ACC. <b><i>NOTE: disconnecting the DSU disables Automatic Emergency Braking (AEB).</i></b>",
     Column.LONGITUDINAL)
   VARIABLE_STEER_SPEED = CarFootnote(
-    "ALC will engage once the car has exceeded the higher speed listed and will then disengage at the lower speed. " +
+    "ALC will engage once the car has exceeded the higher speed listed and disengage at the lower speed. " +
     "ALC may disengage when certain vehicle functions are used such as low/high speed windshield wipers " +
-    "or after pressing the brake pedal.",
+    "or after pressing the brake pedal. Variations in vehicle firmware or the use of openpilot ACC " +
+    "may alter the speeds and limitations listed.",
     Column.FSR_STEERING)
 
 
@@ -269,8 +270,8 @@ class CarInfo:
     self.min_steer_speed = CP.minSteerEnableSpeed if self.min_steer_speed is None else self.min_steer_speed
     min_steer_speed = f"{max(self.min_steer_speed * CV.MS_TO_MPH, 0):.0f} mph"
 
-    # handle vehicles with variable minSteerSpeeds
-    if CP.minSteerEnableSpeed > CP.minSteerDisableSpeed:
+    # variable minSteerSpeeds
+    if CP.minSteerEnableSpeed != CP.minSteerDisableSpeed:
       min_steer_speed = f"{max(CP.minSteerEnableSpeed * CV.MS_TO_MPH, 0):.0f}/{max(CP.minSteerDisableSpeed * CV.MS_TO_MPH, 0):.0f} mph"
       self.footnotes.append(CommonFootnote.VARIABLE_STEER_SPEED)
 

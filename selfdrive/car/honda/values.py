@@ -102,9 +102,6 @@ class Footnote(Enum):
   CIVIC_DIESEL = CarFootnote(
     "2019 Honda Civic 1.6L Diesel Sedan does not have ALC below 12mph.",
     Column.FSR_STEERING)
-  OP_LONG_STEER = CarFootnote(
-    "ALC is available at lower speeds when openpilot longitudinal control is used.",
-    Column.FSR_STEERING)
 
 
 @dataclass
