@@ -208,8 +208,7 @@ class CarInterfaceBase(ABC):
     ret = self._update(c)
 
     # Alert if the EPS is unexpectedly unresponsive to CC output with sufficient speed.
-    # vEgo below the minSteerEnableSpeed will instead warn the user via the low_speed_alert. Speed may not be the only
-    # qualifier for steering commands being accepted or re-transmitted by a gateway such as with some late model Hondas.
+    # vEgo below the minSteerEnableSpeed will instead warn the user via the low_speed_alert.
     if c.latActive and not ret.steerActive:
       if c.actuators.steer != 0 and ret.vEgo >= max(self.CP.minSteerEnableSpeed, MIN_LATERAL_CONTROL_SPEED):
         self.steer_mismatch_counter + 1
