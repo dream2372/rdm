@@ -62,7 +62,8 @@ class CarInterface(CarInterfaceBase):
     # Detect BCM lighting msgs from B-CAN
     # TODO. Add back param
     # if any(0x12F81018 in f for f in fingerprint.values()):
-    ret.flags |= HondaFlags.ENABLE_BLINKERS.value
+    if candidate in HONDA_BOSCH:
+      ret.flags |= HondaFlags.ENABLE_BLINKERS.value
 
     # Accord 1.5T CVT has different gearbox message
     if candidate == CAR.ACCORD and 0x191 in fingerprint[1]:

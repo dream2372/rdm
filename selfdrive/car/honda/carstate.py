@@ -100,7 +100,8 @@ class CarState(CarStateBase):
       self.main_on_sig_msg = "SCM_BUTTONS"
 
     self.shifter_values = can_define.dv[self.gearbox_msg]["GEAR_SHIFTER"]
-    self.kwp_values = {v: k for k, v in can_define.dv["BCM_16f1f0_KWP_Resp_Tester"]["D0"].items()}
+    if CP.carFingerprint in HONDA_BOSCH:
+      self.kwp_values = {v: k for k, v in can_define.dv["BCM_16f1f0_KWP_Resp_Tester"]["D0"].items()}
     self.steer_status_values = defaultdict(lambda: "UNKNOWN", can_define.dv["STEER_STATUS"]["STEER_STATUS"])
 
     self.brake_error = False
