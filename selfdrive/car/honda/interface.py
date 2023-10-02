@@ -21,7 +21,7 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def get_pid_accel_limits(CP, current_speed, cruise_speed):
     if CP.carFingerprint in HONDA_BOSCH:
-      return CarControllerParams.BOSCH_ACCEL_MIN, CarControllerParams.BOSCH_ACCEL_MAX
+      return CarControllerParams.BOSCH_ACCEL_MIN, CarControllerParams.BOSCH_GAS_LOOKUP_BP[-1]
     elif CP.enableGasInterceptor:
       return CarControllerParams.NIDEC_ACCEL_MIN, CarControllerParams.NIDEC_ACCEL_MAX
     else:
@@ -43,6 +43,7 @@ class CarInterface(CarInterfaceBase):
       # If Bosch radarless, this blocks ACC messages from the camera
       ret.experimentalLongitudinalAvailable = True
       ret.openpilotLongitudinalControl = experimental_long
+      ret.radarTimeStep = (1.0 / 8) # 8Hz. Tesla Radar
       ret.pcmCruise = not ret.openpilotLongitudinalControl
     else:
       ret.safetyConfigs = [get_safety_config(car.CarParams.SafetyModel.hondaNidec)]
@@ -58,6 +59,11 @@ class CarInterface(CarInterfaceBase):
     if any(0x33DA in f for f in fingerprint.values()):
       ret.flags |= HondaFlags.BOSCH_EXT_HUD.value
 
+    # Detect BCM lighting msgs from B-CAN
+    # TODO. Add back param
+    # if any(0x12F81018 in f for f in fingerprint.values()):
+    ret.flags |= HondaFlags.ENABLE_BLINKERS.value
+
     # Accord 1.5T CVT has different gearbox message
     if candidate == CAR.ACCORD and 0x191 in fingerprint[1]:
       ret.transmissionType = TransmissionType.cvt
@@ -71,11 +77,16 @@ class CarInterface(CarInterfaceBase):
     ret.lateralTuning.pid.kf = 0.00006  # conservative feed-forward
 
     if candidate in HONDA_BOSCH:
-      ret.longitudinalTuning.kpV = [0.25]
-      ret.longitudinalTuning.kiV = [0.05]
+      ret.longitudinalTuning.kpV = [0.7]
+      ret.longitudinalTuning.kiV = [0.025]
+      ret.longitudinalTuning.deadzoneBP = [5., 10.]
+      ret.longitudinalTuning.deadzoneV = [.0, .15]
       ret.longitudinalActuatorDelayUpperBound = 0.5 # s
-      if candidate in HONDA_BOSCH_RADARLESS:
-        ret.stopAccel = CarControllerParams.BOSCH_ACCEL_MIN  # stock uses -4.0 m/s^2 once stopped but limited by safety model
+      ret.longitudinalActuatorDelayLowerBound = 0.2 # s
+      ret.stoppingDecelRate = 0.075 # brake_travel/s while trying to stop
+      ret.vEgoStopping = 0.3
+      ret.vEgoStarting = 0.3
+      ret.stopAccel = CarControllerParams.BOSCH_ACCEL_MIN  # stock uses -4.0 m/s^2 once stopped but limited by safety model
     else:
       # default longitudinal tuning for all hondas
       ret.longitudinalTuning.kpBP = [0., 5., 35.]
@@ -111,8 +122,12 @@ class CarInterface(CarInterfaceBase):
       ret.wheelbase = 2.70
       ret.centerToFront = ret.wheelbase * 0.4
       ret.steerRatio = 15.38  # 10.93 is end-to-end spec
-      ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
-      ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
+      if eps_modified:
+        ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 2564, 8000], [0, 2564, 3840]]
+        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.36], [0.108]]
+      else:
+        ret.lateralParams.torqueBP, ret.lateralParams.torqueV = [[0, 4096], [0, 4096]]  # TODO: determine if there is a dead zone at the top end
+        ret.lateralTuning.pid.kpV, ret.lateralTuning.pid.kiV = [[0.8], [0.24]]
 
     elif candidate in (CAR.ACCORD, CAR.ACCORDH):
       ret.mass = 3279. * CV.LB_TO_KG

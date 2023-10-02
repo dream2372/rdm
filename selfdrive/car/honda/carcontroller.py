@@ -6,11 +6,23 @@ from openpilot.common.realtime import DT_CTRL
 from opendbc.can.packer import CANPacker
 from openpilot.selfdrive.car import create_gas_interceptor_command
 from openpilot.selfdrive.car.honda import hondacan
-from openpilot.selfdrive.car.honda.values import CruiseButtons, VISUAL_HUD, HONDA_BOSCH, HONDA_BOSCH_RADARLESS, HONDA_NIDEC_ALT_PCM_ACCEL, CarControllerParams
+from openpilot.selfdrive.car.honda.values import CruiseButtons, VISUAL_HUD, HONDA_BOSCH, HONDA_BOSCH_RADARLESS, HONDA_NIDEC_ALT_PCM_ACCEL, \
+                                                 CarControllerParams, HondaFlags
 from openpilot.selfdrive.controls.lib.drive_helpers import rate_limit
 
 VisualAlert = car.CarControl.HUDControl.VisualAlert
 LongCtrlState = car.CarControl.Actuators.LongControlState
+BLINKER_INTERVAL_CANCEL = 20 # frames
+BLINKER_INTERVAL = 30 # frames. The real interval is 0.350 seconds but ours must be shorter
+FACTOR_TORQUE_TO_ACCEL = 0.015
+
+
+def torque_accel(accel, speed, torque):
+  # Send more brake when engine torque increases at low speeds
+  # TODO: does radarless need this?
+  if speed < 2.0 and not accel and torque:
+    accel -= (torque * FACTOR_TORQUE_TO_ACCEL)
+  return accel
 
 
 def compute_gb_honda_bosch(accel, speed):
@@ -104,6 +116,104 @@ def rate_limit_steer(new_steer, last_steer):
   return clip(new_steer, last_steer - MAX_DELTA, last_steer + MAX_DELTA)
 
 
+class BlinkerController:
+  def __init__(self):
+    # Always cancel on startup to test communication with B-CAN
+    self.disabled = True
+    self.lockout = False
+    self.control_prev = False
+    self.queue = []
+
+    self.left_last = 0
+    # self.left_confirmed = False
+    self.right_last = 0
+    # self.right_confirmed = False
+
+    self.left_next = -1
+    self.right_next = -1
+    self.cancel_next = 0
+
+  def process(self, CS):
+    if len(self.queue):
+      if CS.bcm_kwp_started and self.queue[0] in ['left', 'right']:
+        print(f'{self.queue[0]} accepted. removing {self.queue[0]} from queue')
+        self.queue.remove(self.queue[0])
+      elif CS.bcm_kwp_stopped and self.queue[0] == 'cancel':
+        print(f'{self.queue[0]} accepted. removing {self.queue[0]} from queue')
+        self.queue.remove(self.queue[0])
+      if CS.bcm_kwp_failed:
+        self.lockout = True
+
+  def update(self, frame, CC, CS):
+    # lamp state
+    self.left_last = frame if CS.leftBlinker_lamp else self.left_last
+    self.right_last = frame if CS.rightBlinker_lamp else self.right_last
+    # stalk state
+    stalk = CS.leftBlinker_stalk or CS.rightBlinker_stalk
+
+    control = CC.leftBlinker or CC.rightBlinker
+    # the only way to re-enable control after override is to turn off blinker control
+    self.disabled = False if not control else self.disabled
+
+    # control but no lamp
+    if CC.leftBlinker:
+      # light has been off and user input is off. send a pre-cancel
+      if not self.disabled and not stalk:
+        # cancel before the light re-flashes
+        if frame >= (self.left_last + BLINKER_INTERVAL):
+          if len(self.queue):
+            if 'left' not in self.queue:
+              self.left_next = frame
+          else:
+            self.left_next = frame
+        elif frame >= (self.left_last + BLINKER_INTERVAL_CANCEL):
+          if len(self.queue):
+            if 'cancel' not in self.queue:
+              self.cancel_next = frame
+          else:
+            self.cancel_next = frame
+        # user override or car unresponsive
+      elif CS.rightBlinker_stalk or frame > (self.left_last + 1 / DT_CTRL):
+        self.disabled = True
+        self.queue = []
+        self.cancel_next = frame
+    elif CC.rightBlinker:
+      # light has been off and user input is off. send a pre-cancel
+      if not self.disabled and not stalk:
+        # cancel before the light re-flashes
+        if frame >= (self.right_last + BLINKER_INTERVAL):
+          if len(self.queue):
+            if 'right' not in self.queue:
+              self.right_next = frame
+          else:
+            self.right_next = frame
+        elif frame >= (self.right_last + BLINKER_INTERVAL_CANCEL):
+          if len(self.queue):
+            if 'cancel' not in self.queue:
+              self.cancel_next = frame
+          else:
+            self.cancel_next = frame
+        # user override or car unresponsive
+      elif CS.leftBlinker_stalk or frame > (self.right_last + 1 / DT_CTRL):
+        self.disabled = True
+        self.queue = []
+        self.cancel_next = frame
+    elif self.control_prev:
+      # todo: cancel light when full on period has completed (aesthetic)
+      # cancel (or cancel again) when blinker control disenages
+      print('control off cancel')
+      self.queue = []
+      self.cancel_next = frame
+    if not self.lockout:
+      if frame == self.cancel_next:
+        self.queue.append('cancel')
+      elif frame == self.left_next:
+        self.queue.append('left')
+      elif frame == self.right_next:
+        self.queue.append('right')
+    self.control_prev = control
+    return
+
 class CarController:
   def __init__(self, dbc_name, CP, VM):
     self.CP = CP
@@ -117,12 +227,18 @@ class CarController:
     self.apply_brake_last = 0
     self.last_pump_ts = 0.
     self.stopping_counter = 0
+    self.starting_counter = 0
+    self.braking_counter = 0
 
     self.accel = 0.0
     self.speed = 0.0
     self.gas = 0.0
     self.brake = 0.0
     self.last_steer = 0.0
+
+    self.BLINK = None
+    if self.CP.flags & HondaFlags.ENABLE_BLINKERS:
+      self.BLINK = BlinkerController()
 
   def update(self, CC, CS, now_nanos):
     actuators = CC.actuators
@@ -214,13 +330,20 @@ class CarController:
         ts = self.frame * DT_CTRL
 
         if self.CP.carFingerprint in HONDA_BOSCH:
+          accel = torque_accel(accel, CS.out.vEgo, CS.engine_torque)
           self.accel = clip(accel, self.params.BOSCH_ACCEL_MIN, self.params.BOSCH_ACCEL_MAX)
           self.gas = interp(accel, self.params.BOSCH_GAS_LOOKUP_BP, self.params.BOSCH_GAS_LOOKUP_V)
 
           stopping = actuators.longControlState == LongCtrlState.stopping
+          starting = actuators.longControlState == LongCtrlState.starting
+          self.braking = self.accel < self.params.BOSCH_GAS_LOOKUP_BP[0]
+
           self.stopping_counter = self.stopping_counter + 1 if stopping else 0
+          self.starting_counter = self.starting_counter + 1 if starting else 0
+          # Prevent brake lamp flashing. Hold brake_request flag for at least 1.2 seconds before releasing.
+          self.braking_counter = 60 if self.braking else max(0, self.braking_counter - 1)
           can_sends.extend(hondacan.create_acc_commands(self.packer, CC.enabled, CC.longActive, self.accel, self.gas,
-                                                        self.stopping_counter, self.CP.carFingerprint))
+                                                        self.stopping_counter, self.starting_counter, self.braking_counter, self.CP.carFingerprint))
         else:
           apply_brake = clip(self.brake_last - wind_brake, 0.0, 1.0)
           apply_brake = int(clip(apply_brake * self.params.NIDEC_BRAKE_MAX, 0, self.params.NIDEC_BRAKE_MAX - 1))
@@ -246,17 +369,25 @@ class CarController:
               self.gas = 0.0
             can_sends.append(create_gas_interceptor_command(self.packer, self.gas, self.frame // 2))
 
+    if self.BLINK is not None:
+      self.BLINK.update(self.frame, CC, CS)
+
     # Send dashboard UI commands.
     if self.frame % 10 == 0:
       hud = HUDData(int(pcm_accel), int(round(hud_v_cruise)), hud_control.leadVisible,
                     hud_control.lanesVisible, fcw_display, acc_alert, steer_required)
-      can_sends.extend(hondacan.create_ui_commands(self.packer, self.CP, CC.enabled, pcm_speed, hud, CS.is_metric, CS.acc_hud, CS.lkas_hud))
+      can_sends.extend(hondacan.create_ui_commands(self.packer, self.CP, CC.enabled, pcm_speed, hud, CS.is_metric, CS.acc_hud, CS.lkas_hud, self.braking))
 
       if self.CP.openpilotLongitudinalControl and self.CP.carFingerprint not in HONDA_BOSCH:
         self.speed = pcm_speed
 
         if not self.CP.enableGasInterceptor:
           self.gas = pcm_accel / self.params.NIDEC_GAS_MAX
+
+      if self.BLINK is not None:
+        self.BLINK.process(CS)
+        if len(self.BLINK.queue):
+          can_sends.append(hondacan.create_kwp_can_msg(self.packer, cmd=self.BLINK.queue[0]))
 
     new_actuators = actuators.copy()
     new_actuators.speed = self.speed

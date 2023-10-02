@@ -34,8 +34,17 @@ class CarControllerParams:
   BOSCH_ACCEL_MIN = -3.5  # m/s^2
   BOSCH_ACCEL_MAX = 2.0  # m/s^2
 
-  BOSCH_GAS_LOOKUP_BP = [-0.2, 2.0]  # 2m/s^2
-  BOSCH_GAS_LOOKUP_V = [0, 1600]
+  BOSCH_GAS_MIN = -4 # same as panda safety
+  BOSCH_GAS_MAX = 160 # panda safety is 200
+
+  # Stats from 250+ hrs of CIVIC_BOSCH
+  # Max gas: 186.6
+  # Min gas: -4.0
+
+  # Values from PolyReg model of accel, speed, pitch, and engine torque. 100hrs of data. Speed 15 m/s. Pitch -0.01 degrees.
+  # Torque is slightly underrated/lazy so PID is maybe less likely to overshoot which could trigger friction brake (annoying).
+  BOSCH_GAS_LOOKUP_BP = [-0.3, -0.25, 0.0, 1.0, 2.0, 3.0]
+  BOSCH_GAS_LOOKUP_V = [BOSCH_GAS_MIN, 5, 10, 41, 88, BOSCH_GAS_MAX]
 
   def __init__(self, CP):
     self.STEER_MAX = CP.lateralParams.torqueBP[-1]
@@ -609,6 +618,7 @@ FW_VERSIONS = {
       b'39990-TEZ-T020\x00\x00',
       b'39990-TGG-A020\x00\x00',
       b'39990-TGG-A120\x00\x00',
+      b'39990-TGG,A120\x00\x00',
       b'39990-TGG-J510\x00\x00',
       b'39990-TGL-E130\x00\x00',
       b'39990-TGN-E120\x00\x00',
@@ -1559,18 +1569,19 @@ FW_VERSIONS = {
 }
 
 DBC = {
-  CAR.ACCORD: dbc_dict('honda_accord_2018_can_generated', None),
-  CAR.ACCORDH: dbc_dict('honda_accord_2018_can_generated', None),
+
+  CAR.ACCORD: dbc_dict('honda_accord_2018_can_generated', 'tesla_radar', body_dbc='honda_body_2017'),
+  CAR.ACCORDH: dbc_dict('honda_accord_2018_can_generated', 'tesla_radar', body_dbc='honda_body_2017'),
   CAR.ACURA_ILX: dbc_dict('acura_ilx_2016_can_generated', 'acura_ilx_2016_nidec'),
   CAR.ACURA_RDX: dbc_dict('acura_rdx_2018_can_generated', 'acura_ilx_2016_nidec'),
-  CAR.ACURA_RDX_3G: dbc_dict('acura_rdx_2020_can_generated', None),
-  CAR.CIVIC: dbc_dict('honda_civic_touring_2016_can_generated', 'acura_ilx_2016_nidec'),
-  CAR.CIVIC_BOSCH: dbc_dict('honda_civic_hatchback_ex_2017_can_generated', None),
-  CAR.CIVIC_BOSCH_DIESEL: dbc_dict('honda_accord_2018_can_generated', None),
+  CAR.ACURA_RDX_3G: dbc_dict('acura_rdx_2020_can_generated', 'tesla_radar'),
+  CAR.CIVIC: dbc_dict('honda_civic_touring_2016_can_generated', 'acura_ilx_2016_nidec', body_dbc='honda_body_2017'),
+  CAR.CIVIC_BOSCH: dbc_dict('honda_civic_hatchback_ex_2017_can_generated', 'tesla_radar', body_dbc='honda_body_2017'),
+  CAR.CIVIC_BOSCH_DIESEL: dbc_dict('honda_accord_2018_can_generated', 'tesla_radar', body_dbc='honda_body_2017'),
   CAR.CRV: dbc_dict('honda_crv_touring_2016_can_generated', 'acura_ilx_2016_nidec'),
-  CAR.CRV_5G: dbc_dict('honda_crv_ex_2017_can_generated', None, body_dbc='honda_crv_ex_2017_body_generated'),
+  CAR.CRV_5G: dbc_dict('honda_crv_ex_2017_can_generated', 'tesla_radar', body_dbc='honda_body_2017'),
   CAR.CRV_EU: dbc_dict('honda_crv_executive_2016_can_generated', 'acura_ilx_2016_nidec'),
-  CAR.CRV_HYBRID: dbc_dict('honda_accord_2018_can_generated', None),
+  CAR.CRV_HYBRID: dbc_dict('honda_accord_2018_can_generated', 'tesla_radar', body_dbc='honda_body_2017'),
   CAR.FIT: dbc_dict('honda_fit_ex_2018_can_generated', 'acura_ilx_2016_nidec'),
   CAR.FREED: dbc_dict('honda_fit_ex_2018_can_generated', 'acura_ilx_2016_nidec'),
   CAR.HRV: dbc_dict('honda_fit_ex_2018_can_generated', 'acura_ilx_2016_nidec'),
@@ -1579,9 +1590,9 @@ DBC = {
   CAR.ODYSSEY_CHN: dbc_dict('honda_odyssey_extreme_edition_2018_china_can_generated', 'acura_ilx_2016_nidec'),
   CAR.PILOT: dbc_dict('acura_ilx_2016_can_generated', 'acura_ilx_2016_nidec'),
   CAR.RIDGELINE: dbc_dict('acura_ilx_2016_can_generated', 'acura_ilx_2016_nidec'),
-  CAR.INSIGHT: dbc_dict('honda_insight_ex_2019_can_generated', None),
-  CAR.HONDA_E: dbc_dict('acura_rdx_2020_can_generated', None),
-  CAR.CIVIC_2022: dbc_dict('honda_civic_ex_2022_can_generated', None),
+  CAR.INSIGHT: dbc_dict('honda_insight_ex_2019_can_generated', 'tesla_radar'),
+  CAR.HONDA_E: dbc_dict('acura_rdx_2020_can_generated', 'tesla_radar'),
+  CAR.CIVIC_2022: dbc_dict('honda_civic_ex_2022_can_generated', None, body_dbc='honda_body_2017'),
 }
 
 STEER_THRESHOLD = {

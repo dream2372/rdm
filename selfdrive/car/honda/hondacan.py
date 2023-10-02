@@ -51,17 +51,17 @@ def create_brake_command(packer, apply_brake, pump_on, pcm_override, pcm_cancel_
   return packer.make_can_msg("BRAKE_COMMAND", bus, values)
 
 
-def create_acc_commands(packer, enabled, active, accel, gas, stopping_counter, car_fingerprint):
+def create_acc_commands(packer, enabled, active, accel, gas, stopping_counter, starting_counter, braking_counter, car_fingerprint):
   commands = []
   bus = get_pt_bus(car_fingerprint)
   min_gas_accel = CarControllerParams.BOSCH_GAS_LOOKUP_BP[0]
 
   control_on = 5 if enabled else 0
-  gas_command = gas if active and accel > min_gas_accel else -30000
+  gas_command = gas if active and accel > min_gas_accel else -3000
   accel_command = accel if active else 0
-  braking = 1 if active and accel < min_gas_accel else 0
-  standstill = 1 if active and stopping_counter > 0 else 0
-  standstill_release = 1 if active and stopping_counter == 0 else 0
+  braking = 1 if active and braking_counter else 0
+  standstill = 1 if active and stopping_counter > 150 else 0 # Standstill after 3s
+  standstill_release = 1 if active and starting_counter < 20 else 0 # Release for 0.4s
 
   # common ACC_CONTROL values
   acc_control_values = {
@@ -116,7 +116,7 @@ def create_bosch_supplemental_1(packer, car_fingerprint):
   return packer.make_can_msg("BOSCH_SUPPLEMENTAL_1", bus, values)
 
 
-def create_ui_commands(packer, CP, enabled, pcm_speed, hud, is_metric, acc_hud, lkas_hud):
+def create_ui_commands(packer, CP, enabled, pcm_speed, hud, is_metric, acc_hud, lkas_hud, braking):
   commands = []
   bus_pt = get_pt_bus(CP.carFingerprint)
   radar_disabled = CP.carFingerprint in (HONDA_BOSCH - HONDA_BOSCH_RADARLESS) and CP.openpilotLongitudinalControl
@@ -124,7 +124,7 @@ def create_ui_commands(packer, CP, enabled, pcm_speed, hud, is_metric, acc_hud, 
 
   if CP.openpilotLongitudinalControl:
     acc_hud_values = {
-      'CRUISE_SPEED': hud.v_cruise,
+      'CRUISE_SPEED': hud.v_cruise if not braking else 0,
       'ENABLE_MINI_CAR': 1 if enabled else 0,
       'HUD_DISTANCE': 0,  # max distance setting on display
       'IMPERIAL_UNIT': int(not is_metric),
@@ -189,3 +189,18 @@ def spam_buttons_command(packer, button_val, car_fingerprint):
   # send buttons to camera on radarless cars
   bus = 2 if car_fingerprint in HONDA_BOSCH_RADARLESS else get_pt_bus(car_fingerprint)
   return packer.make_can_msg("SCM_BUTTONS", bus, values)
+
+def create_kwp_can_msg(packer, cmd, bus=0):
+  if cmd == 'left':
+    values = {'D0': 0x30,
+              'D1': 0x0a,
+              'D2': 0x0f,
+             }
+  elif cmd == 'right':
+    values = {'D0': 0x30,
+              'D1': 0x0b,
+              'D2': 0x0f,
+             }
+  else:
+    return [384899312, 0, b' ', bus] # default is a special 1 byte cancel
+  return packer.make_can_msg("Tester_16f118_KWP_Req_BCM", bus, values)

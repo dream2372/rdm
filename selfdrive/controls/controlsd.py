@@ -592,6 +592,13 @@ class Controls:
     actuators = CC.actuators
     actuators.longControlState = self.LoC.long_control_state
 
+    # # Model blinkers. Barely sort of works
+    # if CC.enabled:
+    #   CC.leftBlinker = (self.sm['modelV2'].meta.desireState[1] or self.sm['modelV2'].meta.desireState[3]) > 0.5
+    #   CC.rightBlinker = (self.sm['modelV2'].meta.desireState[2] or self.sm['modelV2'].meta.desireState[4]) > 0.5
+    #   if CC.leftBlinker and CC.rightBlinker:
+    #     CC.leftBlinker, CC.rightBlinker = False, False
+
     # Enable blinkers while lane changing
     if self.sm['lateralPlan'].laneChangeState != LaneChangeState.off:
       CC.leftBlinker = self.sm['lateralPlan'].laneChangeDirection == LaneChangeDirection.left
